@@ -56,14 +56,10 @@ function yarnSignature(s: Swatch): string {
     .join('+')
 }
 
+// A project + yarn is one editable group. Stitch pattern, construction and
+// needle vary *within* a project, so they are not part of the key.
 function groupKey(s: Swatch): string {
-  return [
-    (s.project ?? '').trim(),
-    yarnSignature(s),
-    s.needleMaterial,
-    s.stitchPattern,
-    s.construction,
-  ].join('|||')
+  return [(s.project ?? '').trim(), yarnSignature(s)].join('|||')
 }
 
 interface Group {
@@ -149,9 +145,6 @@ export function SwatchJournal({
                   </h3>
                   <div className="project-meta muted">
                     {yarnLabel(first)}
-                    {' · '}
-                    {label(first.stitchPattern)} · {label(first.construction)} ·{' '}
-                    {label(first.needleMaterial)} needles
                     {first.notes ? ` · ${first.notes}` : ''}
                   </div>
                 </div>
@@ -169,6 +162,8 @@ export function SwatchJournal({
                   <thead>
                     <tr>
                       <th>Needle</th>
+                      <th>Pattern</th>
+                      <th>Constr.</th>
                       <th>Gauge (per 10cm)</th>
                       <th>Blocked</th>
                       <th>Logged</th>
@@ -179,6 +174,8 @@ export function SwatchJournal({
                     {group.swatches.map((s) => (
                       <tr key={s.id}>
                         <td className="nowrap">{s.needleSizeMm} mm</td>
+                        <td>{label(s.stitchPattern)}</td>
+                        <td>{label(s.construction)}</td>
                         <td
                           className="nowrap"
                           title={

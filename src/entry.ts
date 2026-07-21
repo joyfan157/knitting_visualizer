@@ -2,8 +2,6 @@ import type {
   Swatch,
   Yarn,
   Measurement,
-  MeasurementMethod,
-  LengthUnit,
   NeedleMaterial,
   StitchPattern,
   Construction,
@@ -11,106 +9,78 @@ import type {
 import { newYarn } from './defaults'
 import { derivePer10cm } from './gauge'
 
-// An "entry" is the form's unit of work: one shared yarn + technique (usually a
-// project), with one or more gauge-swatch *attempts* (e.g. the same yarn tried
-// on several needle sizes to meet gauge). Each attempt is stored as its own
-// independent Swatch; the journal groups them back together by project + yarn.
-
-/** Raw measurement numbers for one attempt; combined with the entry's shared
- *  method + unit to form a Measurement. Both methods' fields are kept so
- *  switching method doesn't lose what was typed. */
-export interface AttemptMeasure {
-  stitchCount: number
-  rowCount: number
-  span: number
-  castOnStitches: number
-  totalRows: number
-  measuredWidth: number
-  measuredHeight: number
-}
+// An "entry" is the form's unit of work: one shared project + yarn, with one or
+// more gauge-swatch *attempts*. Each attempt carries its own needle, technique,
+// and measurement (a project can mix stockinette and rib, different needles,
+// etc.). Each attempt is stored as its own independent Swatch; the journal
+// groups them back together by project + yarn.
 
 export interface Attempt {
   /** Set when this attempt maps to an existing Swatch (edit); absent = new. */
   id?: string
   createdAt?: string
   needleSizeMm: number
+  needleMaterial: NeedleMaterial
+  stitchPattern: StitchPattern
+  construction: Construction
   blocked: boolean
-  measure: AttemptMeasure
+  measurement: Measurement
 }
 
 export interface EntryDraft {
   project?: string
   yarns: Yarn[]
-  needleMaterial: NeedleMaterial
-  stitchPattern: StitchPattern
-  construction: Construction
-  measurementMethod: MeasurementMethod
-  measurementUnit: LengthUnit
   notes?: string
   attempts: Attempt[]
 }
 
-function emptyMeasure(unit: LengthUnit): AttemptMeasure {
+function gaugeSpanDefault(): Measurement {
+  return { method: 'gauge-span', unit: 'cm', stitchCount: 0, rowCount: 0, span: 10 }
+}
+
+export function newAttempt(): Attempt {
   return {
-    stitchCount: 0,
-    rowCount: 0,
-    span: unit === 'in' ? 4 : 10,
-    castOnStitches: 0,
-    totalRows: 0,
-    measuredWidth: 0,
-    measuredHeight: 0,
+    needleSizeMm: 0,
+    needleMaterial: 'metal',
+    stitchPattern: 'stockinette',
+    construction: 'flat',
+    blocked: true,
+    measurement: gaugeSpanDefault(),
   }
 }
 
-export function newAttempt(unit: LengthUnit): Attempt {
-  return { needleSizeMm: 0, blocked: true, measure: emptyMeasure(unit) }
+/** A fresh attempt that inherits the previous one's technique (just clear the
+ *  needle and measured numbers) — fast entry for "same setup, next swatch". */
+export function nextAttempt(prev: Attempt): Attempt {
+  const m = prev.measurement
+  const measurement: Measurement =
+    m.method === 'gauge-span'
+      ? { method: 'gauge-span', unit: m.unit, stitchCount: 0, rowCount: 0, span: m.span }
+      : {
+          method: 'full-swatch',
+          unit: m.unit,
+          castOnStitches: 0,
+          totalRows: 0,
+          measuredWidth: 0,
+          measuredHeight: 0,
+        }
+  return {
+    needleSizeMm: 0,
+    needleMaterial: prev.needleMaterial,
+    stitchPattern: prev.stitchPattern,
+    construction: prev.construction,
+    blocked: prev.blocked,
+    measurement,
+  }
 }
 
 export function newEntryDraft(): EntryDraft {
   return {
     project: '',
     yarns: [newYarn()],
-    needleMaterial: 'metal',
-    stitchPattern: 'stockinette',
-    construction: 'flat',
-    measurementMethod: 'gauge-span',
-    measurementUnit: 'cm',
     notes: '',
-    attempts: [newAttempt('cm')],
+    attempts: [newAttempt()],
   }
-}
-
-/** Combine the entry's shared method/unit with an attempt's numbers. */
-export function attemptMeasurement(draft: EntryDraft, a: Attempt): Measurement {
-  const method = draft.measurementMethod
-  const unit = draft.measurementUnit
-  const m = a.measure
-  return method === 'gauge-span'
-    ? { method, unit, stitchCount: m.stitchCount, rowCount: m.rowCount, span: m.span }
-    : {
-        method,
-        unit,
-        castOnStitches: m.castOnStitches,
-        totalRows: m.totalRows,
-        measuredWidth: m.measuredWidth,
-        measuredHeight: m.measuredHeight,
-      }
-}
-
-function measureFromSwatch(s: Swatch): AttemptMeasure {
-  const measure = emptyMeasure(s.measurement.unit)
-  const m = s.measurement
-  if (m.method === 'gauge-span') {
-    measure.stitchCount = m.stitchCount
-    measure.rowCount = m.rowCount
-    measure.span = m.span
-  } else {
-    measure.castOnStitches = m.castOnStitches
-    measure.totalRows = m.totalRows
-    measure.measuredWidth = m.measuredWidth
-    measure.measuredHeight = m.measuredHeight
-  }
-  return measure
 }
 
 /**
@@ -120,23 +90,20 @@ function measureFromSwatch(s: Swatch): AttemptMeasure {
  */
 export function swatchesToEntry(group: Swatch[]): EntryDraft {
   const first = group[0]
-  const attempts: Attempt[] = group.map((s) => ({
-    id: s.id,
-    createdAt: s.createdAt,
-    needleSizeMm: s.needleSizeMm,
-    blocked: s.blocked,
-    measure: measureFromSwatch(s),
-  }))
   return {
     project: first.project,
     yarns: first.yarns.map((y) => ({ ...y })),
-    needleMaterial: first.needleMaterial,
-    stitchPattern: first.stitchPattern,
-    construction: first.construction,
-    measurementMethod: first.measurement.method,
-    measurementUnit: first.measurement.unit,
     notes: first.notes,
-    attempts,
+    attempts: group.map((s) => ({
+      id: s.id,
+      createdAt: s.createdAt,
+      needleSizeMm: s.needleSizeMm,
+      needleMaterial: s.needleMaterial,
+      stitchPattern: s.stitchPattern,
+      construction: s.construction,
+      blocked: s.blocked,
+      measurement: { ...s.measurement },
+    })),
   }
 }
 
@@ -159,8 +126,7 @@ export function entryToSwatches(draft: EntryDraft, now: string): BuildResult {
     if (!a.needleSizeMm) {
       return { swatches: [], error: `${where}enter a needle size.` }
     }
-    const measurement = attemptMeasurement(draft, a)
-    const g = derivePer10cm(measurement)
+    const g = derivePer10cm(a.measurement)
     if (!g.stitchesPer10cm || !g.rowsPer10cm) {
       return { swatches: [], error: `${where}enter the measurements.` }
     }
@@ -169,10 +135,10 @@ export function entryToSwatches(draft: EntryDraft, now: string): BuildResult {
       createdAt: a.createdAt ?? now,
       yarns: draft.yarns.map((y) => ({ ...y })),
       needleSizeMm: a.needleSizeMm,
-      needleMaterial: draft.needleMaterial,
-      stitchPattern: draft.stitchPattern,
-      construction: draft.construction,
-      measurement,
+      needleMaterial: a.needleMaterial,
+      stitchPattern: a.stitchPattern,
+      construction: a.construction,
+      measurement: a.measurement,
       stitchesPer10cm: round1(g.stitchesPer10cm),
       rowsPer10cm: round1(g.rowsPer10cm),
       blocked: a.blocked,

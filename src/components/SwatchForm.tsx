@@ -9,6 +9,7 @@ import type {
   NeedleMaterial,
   MeasurementMethod,
   LengthUnit,
+  Measurement,
 } from '../types'
 import {
   WEIGHT_CATEGORIES,
@@ -22,13 +23,11 @@ import { newYarn } from '../defaults'
 import { derivePer10cm } from '../gauge'
 import {
   newEntryDraft,
-  newAttempt,
+  nextAttempt,
   swatchesToEntry,
   entryToSwatches,
-  attemptMeasurement,
   type EntryDraft,
   type Attempt,
-  type AttemptMeasure,
 } from '../entry'
 import { NumberInput } from './NumberInput'
 
@@ -145,27 +144,43 @@ function StrandFields({
   )
 }
 
-/** Editor for one gauge-swatch attempt (needle + measurement numbers). */
+/** Editor for one gauge-swatch attempt (needle, technique, measurement). */
 function AttemptCard({
-  draft,
   attempt,
   index,
   canRemove,
   onAttempt,
-  onMeasure,
   onRemove,
 }: {
-  draft: EntryDraft
   attempt: Attempt
   index: number
   canRemove: boolean
   onAttempt: (patch: Partial<Attempt>) => void
-  onMeasure: (patch: Partial<AttemptMeasure>) => void
   onRemove: () => void
 }) {
-  const unit = draft.measurementUnit
-  const preview = derivePer10cm(attemptMeasurement(draft, attempt))
-  const m = attempt.measure
+  const meas = attempt.measurement
+  const unit = meas.unit
+  const preview = derivePer10cm(meas)
+
+  function setMethod(method: MeasurementMethod) {
+    if (method === meas.method) return
+    const next: Measurement =
+      method === 'gauge-span'
+        ? { method, unit, stitchCount: 0, rowCount: 0, span: unit === 'in' ? 4 : 10 }
+        : {
+            method,
+            unit,
+            castOnStitches: 0,
+            totalRows: 0,
+            measuredWidth: 0,
+            measuredHeight: 0,
+          }
+    onAttempt({ measurement: next })
+  }
+
+  function setUnit(nextUnit: LengthUnit) {
+    onAttempt({ measurement: { ...meas, unit: nextUnit } })
+  }
 
   return (
     <div className="attempt">
@@ -202,27 +217,101 @@ function AttemptCard({
         </label>
       </div>
 
-      {draft.measurementMethod === 'gauge-span' ? (
+      <div className="grid-3">
+        <label>
+          Stitch pattern
+          <select
+            value={attempt.stitchPattern}
+            onChange={(e) =>
+              onAttempt({ stitchPattern: e.target.value as StitchPattern })
+            }
+          >
+            {STITCH_PATTERNS.map((p) => (
+              <option key={p} value={p}>
+                {label(p)}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          Construction
+          <select
+            value={attempt.construction}
+            onChange={(e) =>
+              onAttempt({ construction: e.target.value as Construction })
+            }
+          >
+            {CONSTRUCTIONS.map((c) => (
+              <option key={c} value={c}>
+                {label(c)}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          Needle material
+          <select
+            value={attempt.needleMaterial}
+            onChange={(e) =>
+              onAttempt({ needleMaterial: e.target.value as NeedleMaterial })
+            }
+          >
+            {NEEDLE_MATERIALS.map((m) => (
+              <option key={m} value={m}>
+                {label(m)}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+
+      <div className="grid-2">
+        <label>
+          How measured
+          <select
+            value={meas.method}
+            onChange={(e) => setMethod(e.target.value as MeasurementMethod)}
+          >
+            <option value="gauge-span">Count over a swatch window</option>
+            <option value="full-swatch">Made-to-measure whole swatch</option>
+          </select>
+        </label>
+        <label>
+          Units
+          <select value={unit} onChange={(e) => setUnit(e.target.value as LengthUnit)}>
+            <option value="cm">centimeters</option>
+            <option value="in">inches</option>
+          </select>
+        </label>
+      </div>
+
+      {meas.method === 'gauge-span' ? (
         <div className="grid-3">
           <label>
             Stitches <span className="req">*</span>
             <NumberInput
-              value={m.stitchCount || undefined}
-              onChange={(v) => onMeasure({ stitchCount: v ?? 0 })}
+              value={meas.stitchCount || undefined}
+              onChange={(v) =>
+                onAttempt({ measurement: { ...meas, stitchCount: v ?? 0 } })
+              }
             />
           </label>
           <label>
             Rows <span className="req">*</span>
             <NumberInput
-              value={m.rowCount || undefined}
-              onChange={(v) => onMeasure({ rowCount: v ?? 0 })}
+              value={meas.rowCount || undefined}
+              onChange={(v) =>
+                onAttempt({ measurement: { ...meas, rowCount: v ?? 0 } })
+              }
             />
           </label>
           <label>
             Over ({unit}) <span className="req">*</span>
             <NumberInput
-              value={m.span || undefined}
-              onChange={(v) => onMeasure({ span: v ?? 0 })}
+              value={meas.span || undefined}
+              onChange={(v) =>
+                onAttempt({ measurement: { ...meas, span: v ?? 0 } })
+              }
             />
           </label>
         </div>
@@ -232,15 +321,19 @@ function AttemptCard({
             <label>
               Stitches cast on <span className="req">*</span>
               <NumberInput
-                value={m.castOnStitches || undefined}
-                onChange={(v) => onMeasure({ castOnStitches: v ?? 0 })}
+                value={meas.castOnStitches || undefined}
+                onChange={(v) =>
+                  onAttempt({ measurement: { ...meas, castOnStitches: v ?? 0 } })
+                }
               />
             </label>
             <label>
               Rows knit <span className="req">*</span>
               <NumberInput
-                value={m.totalRows || undefined}
-                onChange={(v) => onMeasure({ totalRows: v ?? 0 })}
+                value={meas.totalRows || undefined}
+                onChange={(v) =>
+                  onAttempt({ measurement: { ...meas, totalRows: v ?? 0 } })
+                }
               />
             </label>
           </div>
@@ -248,15 +341,19 @@ function AttemptCard({
             <label>
               Width ({unit}) <span className="req">*</span>
               <NumberInput
-                value={m.measuredWidth || undefined}
-                onChange={(v) => onMeasure({ measuredWidth: v ?? 0 })}
+                value={meas.measuredWidth || undefined}
+                onChange={(v) =>
+                  onAttempt({ measurement: { ...meas, measuredWidth: v ?? 0 } })
+                }
               />
             </label>
             <label>
               Height ({unit}) <span className="req">*</span>
               <NumberInput
-                value={m.measuredHeight || undefined}
-                onChange={(v) => onMeasure({ measuredHeight: v ?? 0 })}
+                value={meas.measuredHeight || undefined}
+                onChange={(v) =>
+                  onAttempt({ measurement: { ...meas, measuredHeight: v ?? 0 } })
+                }
               />
             </label>
           </div>
@@ -312,47 +409,18 @@ export function SwatchForm({
     )
   }
 
-  // --- Measurement setup (shared) ---
-  function setMethod(method: MeasurementMethod) {
-    setDraft((d) => ({ ...d, measurementMethod: method }))
-  }
-  function setUnit(unit: LengthUnit) {
-    setDraft((d) => {
-      const oldDefault = d.measurementUnit === 'in' ? 4 : 10
-      const newDefault = unit === 'in' ? 4 : 10
-      // If a span is still the old unit's default, swap to the new one.
-      const attempts = d.attempts.map((a) =>
-        a.measure.span === oldDefault
-          ? { ...a, measure: { ...a.measure, span: newDefault } }
-          : a,
-      )
-      return { ...d, measurementUnit: unit, attempts }
-    })
-  }
-
-  // --- Attempts ---
+  // --- Gauge-swatch attempts ---
   function setAttempt(index: number, patch: Partial<Attempt>) {
     setDraft((d) => ({
       ...d,
       attempts: d.attempts.map((a, i) => (i === index ? { ...a, ...patch } : a)),
     }))
   }
-  function setMeasure(index: number, patch: Partial<AttemptMeasure>) {
+  function addAttempt() {
     setDraft((d) => ({
       ...d,
-      attempts: d.attempts.map((a, i) =>
-        i === index ? { ...a, measure: { ...a.measure, ...patch } } : a,
-      ),
+      attempts: [...d.attempts, nextAttempt(d.attempts[d.attempts.length - 1])],
     }))
-  }
-  function addAttempt() {
-    setDraft((d) => {
-      const last = d.attempts[d.attempts.length - 1]
-      const a = newAttempt(d.measurementUnit)
-      a.measure.span = last.measure.span
-      a.blocked = last.blocked
-      return { ...d, attempts: [...d.attempts, a] }
-    })
   }
   function removeAttempt(index: number) {
     setDraft((d) =>
@@ -389,9 +457,7 @@ export function SwatchForm({
         Project
         <input
           value={draft.project ?? ''}
-          onChange={(e) =>
-            setDraft((d) => ({ ...d, project: e.target.value }))
-          }
+          onChange={(e) => setDraft((d) => ({ ...d, project: e.target.value }))}
           placeholder="e.g. blue cardigan"
         />
       </label>
@@ -414,103 +480,17 @@ export function SwatchForm({
       </fieldset>
 
       <fieldset>
-        <legend>Technique</legend>
-        <div className="grid-3">
-          <label>
-            Needle material
-            <select
-              value={draft.needleMaterial}
-              onChange={(e) =>
-                setDraft((d) => ({
-                  ...d,
-                  needleMaterial: e.target.value as NeedleMaterial,
-                }))
-              }
-            >
-              {NEEDLE_MATERIALS.map((m) => (
-                <option key={m} value={m}>
-                  {label(m)}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            Stitch pattern
-            <select
-              value={draft.stitchPattern}
-              onChange={(e) =>
-                setDraft((d) => ({
-                  ...d,
-                  stitchPattern: e.target.value as StitchPattern,
-                }))
-              }
-            >
-              {STITCH_PATTERNS.map((p) => (
-                <option key={p} value={p}>
-                  {label(p)}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            Construction
-            <select
-              value={draft.construction}
-              onChange={(e) =>
-                setDraft((d) => ({
-                  ...d,
-                  construction: e.target.value as Construction,
-                }))
-              }
-            >
-              {CONSTRUCTIONS.map((c) => (
-                <option key={c} value={c}>
-                  {label(c)}
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
-      </fieldset>
-
-      <fieldset>
-        <legend>Measured gauge</legend>
-        <div className="grid-2">
-          <label>
-            How measured
-            <select
-              value={draft.measurementMethod}
-              onChange={(e) => setMethod(e.target.value as MeasurementMethod)}
-            >
-              <option value="gauge-span">Count over a swatch window</option>
-              <option value="full-swatch">Made-to-measure whole swatch</option>
-            </select>
-          </label>
-          <label>
-            Units
-            <select
-              value={draft.measurementUnit}
-              onChange={(e) => setUnit(e.target.value as LengthUnit)}
-            >
-              <option value="cm">centimeters</option>
-              <option value="in">inches</option>
-            </select>
-          </label>
-        </div>
-
+        <legend>Gauge swatches</legend>
         {draft.attempts.map((attempt, i) => (
           <AttemptCard
             key={i}
-            draft={draft}
             attempt={attempt}
             index={i}
             canRemove={draft.attempts.length > 1}
             onAttempt={(patch) => setAttempt(i, patch)}
-            onMeasure={(patch) => setMeasure(i, patch)}
             onRemove={() => removeAttempt(i)}
           />
         ))}
-
         <button type="button" className="btn small" onClick={addAttempt}>
           + Add another gauge swatch (same yarn)
         </button>
