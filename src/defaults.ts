@@ -1,4 +1,9 @@
-import type { Swatch, Measurement } from './types'
+import type { Swatch, Yarn, Measurement } from './types'
+
+/** A blank yarn strand (fiber category starts as 'unknown'). */
+export function newYarn(): Yarn {
+  return { fiberCategory: 'unknown' }
+}
 
 /** A blank swatch draft prefilled with Joy's usual habits (see SPEC.md). */
 export function newSwatchDraft(): Omit<Swatch, 'id' | 'createdAt'> {
@@ -10,7 +15,7 @@ export function newSwatchDraft(): Omit<Swatch, 'id' | 'createdAt'> {
     unit: 'cm',
   }
   return {
-    yarn: { fiber: '' },
+    yarns: [newYarn()],
     needleSizeMm: 0, // unset — no default needle (Joy works across many sizes)
     needleMaterial: 'metal',
     stitchPattern: 'stockinette',

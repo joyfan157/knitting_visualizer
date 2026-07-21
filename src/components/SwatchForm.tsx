@@ -3,6 +3,7 @@ import type {
   Swatch,
   Yarn,
   WeightCategory,
+  FiberCategory,
   StitchPattern,
   Construction,
   NeedleMaterial,
@@ -14,16 +15,128 @@ import type {
 } from '../types'
 import {
   WEIGHT_CATEGORIES,
+  FIBER_CATEGORIES,
   STITCH_PATTERNS,
   CONSTRUCTIONS,
   NEEDLE_MATERIALS,
   label,
 } from '../types'
-import { newSwatchDraft } from '../defaults'
+import { newSwatchDraft, newYarn } from '../defaults'
 import { derivePer10cm } from '../gauge'
 import { NumberInput } from './NumberInput'
 
 const round1 = (n: number) => Math.round(n * 10) / 10
+
+/** Editor for a single yarn strand. */
+function StrandFields({
+  yarn,
+  index,
+  canRemove,
+  onChange,
+  onRemove,
+}: {
+  yarn: Yarn
+  index: number
+  canRemove: boolean
+  onChange: (patch: Partial<Yarn>) => void
+  onRemove: () => void
+}) {
+  return (
+    <div className="strand">
+      <div className="strand-head">
+        <span className="strand-title">Strand {index + 1}</span>
+        {canRemove && (
+          <button
+            type="button"
+            className="btn danger small"
+            onClick={onRemove}
+            title="Remove strand"
+          >
+            ✕
+          </button>
+        )}
+      </div>
+      <div className="grid-2">
+        <label>
+          Brand
+          <input
+            value={yarn.brand ?? ''}
+            onChange={(e) => onChange({ brand: e.target.value })}
+            placeholder="e.g. Malabrigo"
+          />
+        </label>
+        <label>
+          Name
+          <input
+            value={yarn.name ?? ''}
+            onChange={(e) => onChange({ name: e.target.value })}
+            placeholder="e.g. Rios"
+          />
+        </label>
+      </div>
+      <div className="grid-2">
+        <label>
+          Fiber category
+          <select
+            value={yarn.fiberCategory}
+            onChange={(e) =>
+              onChange({ fiberCategory: e.target.value as FiberCategory })
+            }
+          >
+            {FIBER_CATEGORIES.map((c) => (
+              <option key={c} value={c}>
+                {label(c)}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          Specific fiber (optional)
+          <input
+            value={yarn.fiber ?? ''}
+            onChange={(e) => onChange({ fiber: e.target.value || undefined })}
+            placeholder="e.g. 100% merino"
+          />
+        </label>
+      </div>
+      <div className="grid-3">
+        <label>
+          Weight
+          <select
+            value={yarn.weightCategory ?? ''}
+            onChange={(e) =>
+              onChange({
+                weightCategory: (e.target.value as WeightCategory) || undefined,
+              })
+            }
+          >
+            <option value="">—</option>
+            {WEIGHT_CATEGORIES.map((w) => (
+              <option key={w} value={w}>
+                {label(w)}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          m / gram
+          <NumberInput
+            value={yarn.metersPerGram}
+            onChange={(v) => onChange({ metersPerGram: v })}
+          />
+        </label>
+        <label>
+          WPI
+          <NumberInput value={yarn.wpi} onChange={(v) => onChange({ wpi: v })} />
+        </label>
+      </div>
+      <label className="narrow">
+        Plies
+        <NumberInput value={yarn.plies} onChange={(v) => onChange({ plies: v })} />
+      </label>
+    </div>
+  )
+}
 
 export function SwatchForm({
   onSave,
@@ -32,8 +145,21 @@ export function SwatchForm({
 }) {
   const [draft, setDraft] = useState(newSwatchDraft())
 
-  function setYarn(patch: Partial<Yarn>) {
-    setDraft((d) => ({ ...d, yarn: { ...d.yarn, ...patch } }))
+  function setStrand(index: number, patch: Partial<Yarn>) {
+    setDraft((d) => ({
+      ...d,
+      yarns: d.yarns.map((y, i) => (i === index ? { ...y, ...patch } : y)),
+    }))
+  }
+  function addStrand() {
+    setDraft((d) => ({ ...d, yarns: [...d.yarns, newYarn()] }))
+  }
+  function removeStrand(index: number) {
+    setDraft((d) =>
+      d.yarns.length > 1
+        ? { ...d, yarns: d.yarns.filter((_, i) => i !== index) }
+        : d,
+    )
   }
 
   const measurement = draft.measurement
@@ -78,10 +204,6 @@ export function SwatchForm({
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
-    if (!draft.yarn.fiber.trim()) {
-      alert('Fiber composition is required.')
-      return
-    }
     if (!draft.needleSizeMm) {
       alert('Enter a needle size.')
       return
@@ -105,75 +227,22 @@ export function SwatchForm({
   return (
     <form className="swatch-form" onSubmit={handleSubmit}>
       <fieldset>
-        <legend>Yarn</legend>
-        <div className="grid-2">
-          <label>
-            Brand
-            <input
-              value={draft.yarn.brand ?? ''}
-              onChange={(e) => setYarn({ brand: e.target.value })}
-              placeholder="e.g. Malabrigo"
-            />
-          </label>
-          <label>
-            Name
-            <input
-              value={draft.yarn.name ?? ''}
-              onChange={(e) => setYarn({ name: e.target.value })}
-              placeholder="e.g. Rios"
-            />
-          </label>
-        </div>
-        <label>
-          Fiber composition <span className="req">*</span>
-          <input
-            value={draft.yarn.fiber}
-            onChange={(e) => setYarn({ fiber: e.target.value })}
-            placeholder="e.g. 100% merino, 80/20 wool/nylon"
+        <legend>
+          Yarn{draft.yarns.length > 1 ? ' (held together)' : ''}
+        </legend>
+        {draft.yarns.map((yarn, i) => (
+          <StrandFields
+            key={i}
+            yarn={yarn}
+            index={i}
+            canRemove={draft.yarns.length > 1}
+            onChange={(patch) => setStrand(i, patch)}
+            onRemove={() => removeStrand(i)}
           />
-        </label>
-        <div className="grid-3">
-          <label>
-            Weight
-            <select
-              value={draft.yarn.weightCategory ?? ''}
-              onChange={(e) =>
-                setYarn({
-                  weightCategory:
-                    (e.target.value as WeightCategory) || undefined,
-                })
-              }
-            >
-              <option value="">—</option>
-              {WEIGHT_CATEGORIES.map((w) => (
-                <option key={w} value={w}>
-                  {label(w)}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            m / gram
-            <NumberInput
-              value={draft.yarn.metersPerGram}
-              onChange={(v) => setYarn({ metersPerGram: v })}
-            />
-          </label>
-          <label>
-            WPI
-            <NumberInput
-              value={draft.yarn.wpi}
-              onChange={(v) => setYarn({ wpi: v })}
-            />
-          </label>
-        </div>
-        <label className="narrow">
-          Plies
-          <NumberInput
-            value={draft.yarn.plies}
-            onChange={(v) => setYarn({ plies: v })}
-          />
-        </label>
+        ))}
+        <button type="button" className="btn small" onClick={addStrand}>
+          + Add strand held together
+        </button>
       </fieldset>
 
       <fieldset>

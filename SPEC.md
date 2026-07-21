@@ -70,11 +70,13 @@ Gauge applies to both crafts, so starting with the gauge DB doesn't foreclose it
 
 ### Swatch data model
 
-- **Yarn:** brand, name, fiber composition (required, free text e.g.
-  "100% merino", "80/20 wool/nylon"), weight category (lace→super-bulky),
-  grist as `metersPerGram` (standard yarn-label figure) and/or `wpi` (wraps per
-  inch) — both optional, keep
-  whichever is known, both is best, plies.
+- **Yarn:** a swatch holds an **array of strands** (`yarns[]`); length 1 is a
+  single yarn, more means held together. Each strand has: brand, name, **fiber
+  category** (animal / plant / synthetic / blend / unknown — required, defaults
+  to `unknown` for unlabeled/thrifted yarn), optional **specific fiber** text
+  (e.g. "100% merino"), weight category (lace→super-bulky), grist as
+  `metersPerGram` (standard yarn-label figure) and/or `wpi` (wraps per inch) —
+  both optional, plies.
 - **Tools:** needle size in **mm** (canonical); needle material (defaults to
   **metal** — Joy uses a full interchangeable metal kit).
 - **Technique:** stitch pattern (stockinette, garter, ribbing, seed, cable,
@@ -100,8 +102,10 @@ predicted gauge (sts/10cm, rows/10cm) with a ± range. Three blended ingredients
 1. **Physics baseline** — stitch width scales with needle diameter; gives a sane
    guess with zero personal data. Knit stitches are wider than tall, so rows/10cm
    > sts/10cm.
-2. **Learned from Joy's swatches** — similar swatches (by needle size, pattern,
-   fiber, construction) pull the prediction toward her real tension.
+2. **Learned from Joy's swatches** — similar swatches pull the prediction toward
+   her real tension. Similarity weighs needle size, **strand count** (held-
+   together strands change gauge a lot), fiber category, stitch pattern, and
+   construction. 'unknown' fiber is treated as "no constraint".
 3. **Uncertainty** — reported as a range that is wide with little data and
    narrows as the journal grows. No false precision.
 

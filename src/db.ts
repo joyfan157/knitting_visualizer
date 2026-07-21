@@ -1,5 +1,6 @@
 import { openDB, type DBSchema, type IDBPDatabase } from 'idb'
 import type { Swatch } from './types'
+import { normalizeSwatch } from './migrate'
 
 // Local-first storage: swatches live in the browser's IndexedDB.
 // JSON export/import (in App.tsx) provides backup + portability.
@@ -26,11 +27,11 @@ function getDB() {
   return dbPromise
 }
 
-/** All swatches, newest first. */
+/** All swatches, newest first (normalized to the current shape on read). */
 export async function getAllSwatches(): Promise<Swatch[]> {
   const db = await getDB()
   const all = await db.getAllFromIndex('swatches', 'by-createdAt')
-  return all.reverse()
+  return all.reverse().map(normalizeSwatch)
 }
 
 export async function saveSwatch(swatch: Swatch): Promise<void> {
@@ -43,10 +44,10 @@ export async function deleteSwatch(id: string): Promise<void> {
   await db.delete('swatches', id)
 }
 
-/** Bulk upsert, used by JSON import. */
-export async function importSwatches(swatches: Swatch[]): Promise<void> {
+/** Bulk upsert, used by JSON import. Normalizes older shapes on the way in. */
+export async function importSwatches(swatches: unknown[]): Promise<void> {
   const db = await getDB()
   const tx = db.transaction('swatches', 'readwrite')
-  await Promise.all(swatches.map((s) => tx.store.put(s)))
+  await Promise.all(swatches.map((s) => tx.store.put(normalizeSwatch(s))))
   await tx.done
 }

@@ -1,4 +1,9 @@
-import type { Swatch, StitchPattern, Construction } from './types'
+import type {
+  Swatch,
+  StitchPattern,
+  Construction,
+  FiberCategory,
+} from './types'
 
 // Gauge prediction = a function from (needle, pattern, fiber, …) to a predicted
 // gauge with an uncertainty range. It blends a physics baseline with the
@@ -23,7 +28,8 @@ export interface PredictionInput {
   needleSizeMm: number
   stitchPattern: StitchPattern
   construction: Construction
-  fiber?: string
+  /** Fiber category of each strand held together. Length = strand count. */
+  fiberCategories: FiberCategory[]
 }
 
 export interface GaugeEstimate {
@@ -48,6 +54,34 @@ function physicsBaseline(needleSizeMm: number) {
   }
 }
 
+/** Held-strand count strongly affects gauge, so weight it steeply. */
+function strandCountFactor(a: number, b: number): number {
+  const d = Math.abs(a - b)
+  return d === 0 ? 1 : d === 1 ? 0.4 : 0.15
+}
+
+/**
+ * Fiber similarity by category. 'unknown' is treated as "no constraint" and
+ * ignored on both sides. If the query has no known categories, stay neutral.
+ */
+function fiberFactor(
+  queryCats: FiberCategory[],
+  swatchCats: FiberCategory[],
+): number {
+  const q = queryCats.filter((c) => c !== 'unknown')
+  if (q.length === 0) return 0.7
+  const pool = swatchCats.filter((c) => c !== 'unknown')
+  let hits = 0
+  for (const c of q) {
+    const i = pool.indexOf(c)
+    if (i >= 0) {
+      hits++
+      pool.splice(i, 1)
+    }
+  }
+  return 0.4 + 0.6 * (hits / q.length)
+}
+
 /**
  * Similarity weight of an existing swatch to the query. Product of independent
  * factors, each in (0, 1]. Needle distance is a Gaussian falloff; the others are
@@ -57,15 +91,13 @@ function similarity(s: Swatch, input: PredictionInput): number {
   const dNeedle = Math.abs(s.needleSizeMm - input.needleSizeMm)
   const wNeedle = Math.exp(-((dNeedle / NEEDLE_SCALE) ** 2))
   const wPattern = s.stitchPattern === input.stitchPattern ? 1 : 0.2
-
-  const queryFiber = input.fiber?.trim().toLowerCase()
-  const swatchFiber = s.yarn.fiber?.trim().toLowerCase()
-  const wFiber =
-    queryFiber && swatchFiber ? (swatchFiber === queryFiber ? 1 : 0.5) : 0.7
-
   const wConstruction = s.construction === input.construction ? 1 : 0.7
 
-  return wNeedle * wPattern * wFiber * wConstruction
+  const swatchCats = s.yarns.map((y) => y.fiberCategory)
+  const wStrands = strandCountFactor(input.fiberCategories.length, s.yarns.length)
+  const wFiber = fiberFactor(input.fiberCategories, swatchCats)
+
+  return wNeedle * wPattern * wConstruction * wStrands * wFiber
 }
 
 export function predictGauge(

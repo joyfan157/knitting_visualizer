@@ -49,11 +49,20 @@ export interface FullSwatchMeasurement {
 
 export type Measurement = GaugeSpanMeasurement | FullSwatchMeasurement
 
+/**
+ * Broad fiber family. Always set — use 'unknown' for unlabeled / thrifted yarn
+ * whose exact composition isn't known.
+ */
+export type FiberCategory = 'animal' | 'plant' | 'synthetic' | 'blend' | 'unknown'
+
+/** One strand of yarn. A swatch may hold several strands together. */
 export interface Yarn {
   brand?: string
   name?: string
-  /** Free text, e.g. "100% merino", "80/20 wool/nylon". Required. */
-  fiber: string
+  /** Broad family; required (defaults to 'unknown'). */
+  fiberCategory: FiberCategory
+  /** Optional specific composition, e.g. "100% merino", "80/20 wool/nylon". */
+  fiber?: string
   weightCategory?: WeightCategory
   /** Grist option 1: meters per gram (the standard yarn-label figure). */
   metersPerGram?: number
@@ -66,7 +75,8 @@ export interface Swatch {
   id: string
   /** ISO timestamp. */
   createdAt: string
-  yarn: Yarn
+  /** Strands held together. Length 1 = a single yarn. */
+  yarns: Yarn[]
   needleSizeMm: number
   needleMaterial: NeedleMaterial
   stitchPattern: StitchPattern
@@ -108,7 +118,21 @@ export const CONSTRUCTIONS: Construction[] = ['flat', 'in-the-round']
 
 export const NEEDLE_MATERIALS: NeedleMaterial[] = ['metal', 'wood', 'bamboo', 'other']
 
+export const FIBER_CATEGORIES: FiberCategory[] = [
+  'animal',
+  'plant',
+  'synthetic',
+  'blend',
+  'unknown',
+]
+
 const LABELS: Record<string, string> = {
+  // fiber categories
+  animal: 'Animal (wool, alpaca, silk…)',
+  plant: 'Plant (cotton, linen, bamboo…)',
+  synthetic: 'Synthetic (acrylic, nylon…)',
+  blend: 'Blend',
+  unknown: 'Unknown',
   // stitch patterns
   stockinette: 'Stockinette',
   garter: 'Garter',

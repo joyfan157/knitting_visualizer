@@ -1,12 +1,21 @@
 import { useState } from 'react'
-import type { Swatch, StitchPattern, Construction } from '../types'
-import { STITCH_PATTERNS, CONSTRUCTIONS, label } from '../types'
+import type {
+  Swatch,
+  StitchPattern,
+  Construction,
+  FiberCategory,
+} from '../types'
+import {
+  STITCH_PATTERNS,
+  CONSTRUCTIONS,
+  FIBER_CATEGORIES,
+  label,
+} from '../types'
 import { predictGauge, type GaugeEstimate } from '../prediction'
 import { NumberInput } from './NumberInput'
 
 const BASIS_NOTE: Record<string, string> = {
-  physics:
-    'Physics estimate only — log swatches like this to personalize it.',
+  physics: 'Physics estimate only — log swatches like this to personalize it.',
   blended: 'Blending your swatches with the physics baseline.',
   data: 'Based mostly on your own swatches.',
 }
@@ -26,11 +35,28 @@ function EstimateRow({ label: name, est }: { label: string; est: GaugeEstimate }
 export function Predictor({ swatches }: { swatches: Swatch[] }) {
   const [needleSizeMm, setNeedle] = useState<number | undefined>(undefined)
   const [stitchPattern, setPattern] = useState<StitchPattern>('stockinette')
-  const [construction, setConstruction] = useState<Construction>('in-the-round')
-  const [fiber, setFiber] = useState('')
+  const [construction, setConstruction] = useState<Construction>('flat')
+  const [fiberCategories, setFiberCategories] = useState<FiberCategory[]>([
+    'unknown',
+  ])
+
+  function setStrandCat(index: number, value: FiberCategory) {
+    setFiberCategories((cats) => cats.map((c, i) => (i === index ? value : c)))
+  }
+  function addStrand() {
+    setFiberCategories((cats) => [...cats, 'unknown'])
+  }
+  function removeStrand(index: number) {
+    setFiberCategories((cats) =>
+      cats.length > 1 ? cats.filter((_, i) => i !== index) : cats,
+    )
+  }
 
   const prediction = needleSizeMm
-    ? predictGauge({ needleSizeMm, stitchPattern, construction, fiber }, swatches)
+    ? predictGauge(
+        { needleSizeMm, stitchPattern, construction, fiberCategories },
+        swatches,
+      )
     : null
 
   return (
@@ -72,14 +98,40 @@ export function Predictor({ swatches }: { swatches: Swatch[] }) {
             ))}
           </select>
         </label>
-        <label>
-          Fiber (optional)
-          <input
-            value={fiber}
-            onChange={(e) => setFiber(e.target.value)}
-            placeholder="e.g. 100% merino"
-          />
-        </label>
+        <div />
+      </div>
+
+      <div className="predictor-strands">
+        <span className="field-label">
+          Strand{fiberCategories.length > 1 ? 's held together' : ''}
+        </span>
+        {fiberCategories.map((cat, i) => (
+          <div className="strand-row" key={i}>
+            <select
+              value={cat}
+              onChange={(e) => setStrandCat(i, e.target.value as FiberCategory)}
+            >
+              {FIBER_CATEGORIES.map((c) => (
+                <option key={c} value={c}>
+                  {label(c)}
+                </option>
+              ))}
+            </select>
+            {fiberCategories.length > 1 && (
+              <button
+                type="button"
+                className="btn danger small"
+                onClick={() => removeStrand(i)}
+                title="Remove strand"
+              >
+                ✕
+              </button>
+            )}
+          </div>
+        ))}
+        <button type="button" className="btn small" onClick={addStrand}>
+          + Add strand
+        </button>
       </div>
 
       {prediction ? (

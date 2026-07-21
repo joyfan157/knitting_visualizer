@@ -1,15 +1,18 @@
 import { useState } from 'react'
-import type { Swatch } from '../types'
+import type { Swatch, Yarn } from '../types'
 import { label } from '../types'
 import { describeMeasurement } from '../gauge'
 
 function matchesQuery(s: Swatch, q: string): boolean {
   if (!q.trim()) return true
   const hay = [
-    s.yarn.brand,
-    s.yarn.name,
-    s.yarn.fiber,
-    s.yarn.weightCategory,
+    ...s.yarns.flatMap((y) => [
+      y.brand,
+      y.name,
+      y.fiber,
+      y.fiberCategory,
+      y.weightCategory,
+    ]),
     s.stitchPattern,
     s.construction,
     s.project,
@@ -21,9 +24,22 @@ function matchesQuery(s: Swatch, q: string): boolean {
   return hay.includes(q.trim().toLowerCase())
 }
 
+function strandName(y: Yarn): string {
+  const parts = [y.brand, y.name].filter(Boolean)
+  return parts.length ? parts.join(' ') : label(y.fiberCategory)
+}
+
+/** Fiber description for one strand: specific text if given, else category. */
+function strandFiber(y: Yarn): string {
+  return y.fiber?.trim() || label(y.fiberCategory)
+}
+
 function yarnName(s: Swatch): string {
-  const parts = [s.yarn.brand, s.yarn.name].filter(Boolean)
-  return parts.length ? parts.join(' ') : '—'
+  return s.yarns.map(strandName).join(' + ')
+}
+
+function fiberSummary(s: Swatch): string {
+  return s.yarns.map(strandFiber).join(' + ')
 }
 
 export function SwatchJournal({
@@ -76,8 +92,13 @@ export function SwatchJournal({
               {filtered.map((s) => (
                 <tr key={s.id}>
                   <td>{new Date(s.createdAt).toLocaleDateString()}</td>
-                  <td>{yarnName(s)}</td>
-                  <td>{s.yarn.fiber}</td>
+                  <td>
+                    {yarnName(s)}
+                    {s.yarns.length > 1 && (
+                      <span className="muted"> ({s.yarns.length} strands)</span>
+                    )}
+                  </td>
+                  <td>{fiberSummary(s)}</td>
                   <td>{s.needleSizeMm} mm</td>
                   <td>{label(s.stitchPattern)}</td>
                   <td
