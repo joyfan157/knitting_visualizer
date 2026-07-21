@@ -354,16 +354,6 @@ export function SwatchForm({
             />
             Blocked
           </label>
-          <label className="inline">
-            <input
-              type="checkbox"
-              checked={draft.washed}
-              onChange={(e) =>
-                setDraft((d) => ({ ...d, washed: e.target.checked }))
-              }
-            />
-            Washed
-          </label>
         </div>
       </fieldset>
 

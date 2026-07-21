@@ -78,17 +78,17 @@ Gauge applies to both crafts, so starting with the gauge DB doesn't foreclose it
 - **Tools:** needle size in **mm** (canonical); needle material (defaults to
   **metal** — Joy uses a full interchangeable metal kit).
 - **Technique:** stitch pattern (stockinette, garter, ribbing, seed, cable,
-  other); construction flat vs **in the round** (Joy's default).
+  other); construction flat vs in the round (defaults to **flat**).
 - **Measured result:** flexible entry, normalized to a canonical **stitches &
   rows per 10cm**. Two methods: (a) _gauge-span_ — count sts/rows over a measured
   window; (b) _full-swatch / made-to-measure_ — cast on N sts, knit M rows, then
   measure the finished piece's width & height. Window/piece dimensions can be
   given in **cm or inches** (1 in = 2.54 cm exactly, so 4 in = 10.16 cm ≠ 10 cm;
-  we convert precisely). Plus blocked (default true) and washed (default true —
-  Joy wet-blocks).
+  we convert precisely). Plus blocked (default true). (No separate "washed"
+  field — Joy wet-blocks, so washing is implied by blocking.)
 - **Meta:** created date, project, notes.
 
-Smart defaults reflect Joy's habits (metal, in-the-round, wet-blocked) so entry
+Smart defaults reflect Joy's habits (metal needles, flat, blocked) so entry
 is fast, but every field stays editable for old swatches or experiments.
 **Biggest predictive levers (per Joy): fiber composition and needle size.**
 

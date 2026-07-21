@@ -77,7 +77,6 @@ export interface Swatch {
   stitchesPer10cm: number
   rowsPer10cm: number
   blocked: boolean
-  washed: boolean
   project?: string
   notes?: string
 }

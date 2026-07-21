@@ -91,7 +91,6 @@ export function SwatchJournal({
                   <td>{label(s.construction)}</td>
                   <td className="finish">
                     {s.blocked ? 'blocked' : 'unblocked'}
-                    {s.washed ? ', washed' : ''}
                   </td>
                   <td className="notes-cell" title={s.notes}>
                     {s.project ? <strong>{s.project}</strong> : null}

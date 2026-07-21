@@ -14,12 +14,11 @@ export function newSwatchDraft(): Omit<Swatch, 'id' | 'createdAt'> {
     needleSizeMm: 0, // unset — no default needle (Joy works across many sizes)
     needleMaterial: 'metal',
     stitchPattern: 'stockinette',
-    construction: 'in-the-round',
+    construction: 'flat',
     measurement,
     stitchesPer10cm: 0,
     rowsPer10cm: 0,
     blocked: true,
-    washed: true,
     project: '',
     notes: '',
   }
