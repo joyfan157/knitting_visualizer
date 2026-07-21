@@ -21,11 +21,7 @@ import {
 } from '../types'
 import { newSwatchDraft } from '../defaults'
 import { derivePer10cm } from '../gauge'
-
-/** '' -> undefined, otherwise Number. Keeps optional numeric fields clean. */
-function numOrUndef(v: string): number | undefined {
-  return v.trim() === '' ? undefined : Number(v)
-}
+import { NumberInput } from './NumberInput'
 
 const round1 = (n: number) => Math.round(n * 10) / 10
 
@@ -84,6 +80,10 @@ export function SwatchForm({
     e.preventDefault()
     if (!draft.yarn.fiber.trim()) {
       alert('Fiber composition is required.')
+      return
+    }
+    if (!draft.needleSizeMm) {
+      alert('Enter a needle size.')
       return
     }
     const { stitchesPer10cm, rowsPer10cm } = derivePer10cm(draft.measurement)
@@ -154,35 +154,24 @@ export function SwatchForm({
           </label>
           <label>
             m / gram
-            <input
-              type="number"
-              step="0.1"
-              min="0"
-              value={draft.yarn.metersPerGram ?? ''}
-              onChange={(e) =>
-                setYarn({ metersPerGram: numOrUndef(e.target.value) })
-              }
+            <NumberInput
+              value={draft.yarn.metersPerGram}
+              onChange={(v) => setYarn({ metersPerGram: v })}
             />
           </label>
           <label>
             WPI
-            <input
-              type="number"
-              step="1"
-              min="0"
-              value={draft.yarn.wpi ?? ''}
-              onChange={(e) => setYarn({ wpi: numOrUndef(e.target.value) })}
+            <NumberInput
+              value={draft.yarn.wpi}
+              onChange={(v) => setYarn({ wpi: v })}
             />
           </label>
         </div>
         <label className="narrow">
           Plies
-          <input
-            type="number"
-            step="1"
-            min="0"
-            value={draft.yarn.plies ?? ''}
-            onChange={(e) => setYarn({ plies: numOrUndef(e.target.value) })}
+          <NumberInput
+            value={draft.yarn.plies}
+            onChange={(v) => setYarn({ plies: v })}
           />
         </label>
       </fieldset>
@@ -192,14 +181,12 @@ export function SwatchForm({
         <div className="grid-2">
           <label>
             Needle size (mm) <span className="req">*</span>
-            <input
-              type="number"
-              step="0.25"
-              min="0"
-              value={draft.needleSizeMm}
-              onChange={(e) =>
-                setDraft((d) => ({ ...d, needleSizeMm: Number(e.target.value) }))
+            <NumberInput
+              value={draft.needleSizeMm || undefined}
+              onChange={(v) =>
+                setDraft((d) => ({ ...d, needleSizeMm: v ?? 0 }))
               }
+              placeholder="e.g. 3.75"
             />
           </label>
           <label>
@@ -290,36 +277,23 @@ export function SwatchForm({
           <div className="grid-3">
             <label>
               Stitches counted <span className="req">*</span>
-              <input
-                type="number"
-                step="0.5"
-                min="0"
-                value={measurement.stitchCount || ''}
-                onChange={(e) =>
-                  updateSpan({ stitchCount: Number(e.target.value) })
-                }
+              <NumberInput
+                value={measurement.stitchCount || undefined}
+                onChange={(v) => updateSpan({ stitchCount: v ?? 0 })}
               />
             </label>
             <label>
               Rows counted <span className="req">*</span>
-              <input
-                type="number"
-                step="0.5"
-                min="0"
-                value={measurement.rowCount || ''}
-                onChange={(e) =>
-                  updateSpan({ rowCount: Number(e.target.value) })
-                }
+              <NumberInput
+                value={measurement.rowCount || undefined}
+                onChange={(v) => updateSpan({ rowCount: v ?? 0 })}
               />
             </label>
             <label>
               Over ({measurement.unit}) <span className="req">*</span>
-              <input
-                type="number"
-                step="0.1"
-                min="0"
-                value={measurement.span || ''}
-                onChange={(e) => updateSpan({ span: Number(e.target.value) })}
+              <NumberInput
+                value={measurement.span || undefined}
+                onChange={(v) => updateSpan({ span: v ?? 0 })}
               />
             </label>
           </div>
@@ -328,53 +302,33 @@ export function SwatchForm({
             <div className="grid-2">
               <label>
                 Stitches cast on <span className="req">*</span>
-                <input
-                  type="number"
-                  step="1"
-                  min="0"
-                  value={measurement.castOnStitches || ''}
-                  onChange={(e) =>
-                    updateFull({ castOnStitches: Number(e.target.value) })
-                  }
+                <NumberInput
+                  value={measurement.castOnStitches || undefined}
+                  onChange={(v) => updateFull({ castOnStitches: v ?? 0 })}
                 />
               </label>
               <label>
                 Rows knit <span className="req">*</span>
-                <input
-                  type="number"
-                  step="1"
-                  min="0"
-                  value={measurement.totalRows || ''}
-                  onChange={(e) =>
-                    updateFull({ totalRows: Number(e.target.value) })
-                  }
+                <NumberInput
+                  value={measurement.totalRows || undefined}
+                  onChange={(v) => updateFull({ totalRows: v ?? 0 })}
                 />
               </label>
             </div>
             <div className="grid-2">
               <label>
                 Measured width ({measurement.unit}) <span className="req">*</span>
-                <input
-                  type="number"
-                  step="0.1"
-                  min="0"
-                  value={measurement.measuredWidth || ''}
-                  onChange={(e) =>
-                    updateFull({ measuredWidth: Number(e.target.value) })
-                  }
+                <NumberInput
+                  value={measurement.measuredWidth || undefined}
+                  onChange={(v) => updateFull({ measuredWidth: v ?? 0 })}
                 />
               </label>
               <label>
                 Measured height ({measurement.unit}){' '}
                 <span className="req">*</span>
-                <input
-                  type="number"
-                  step="0.1"
-                  min="0"
-                  value={measurement.measuredHeight || ''}
-                  onChange={(e) =>
-                    updateFull({ measuredHeight: Number(e.target.value) })
-                  }
+                <NumberInput
+                  value={measurement.measuredHeight || undefined}
+                  onChange={(v) => updateFull({ measuredHeight: v ?? 0 })}
                 />
               </label>
             </div>
@@ -388,6 +342,7 @@ export function SwatchForm({
             <span className="muted"> &nbsp;(converted from inches)</span>
           )}
         </p>
+
         <div className="checkboxes">
           <label className="inline">
             <input

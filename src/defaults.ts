@@ -11,7 +11,7 @@ export function newSwatchDraft(): Omit<Swatch, 'id' | 'createdAt'> {
   }
   return {
     yarn: { fiber: '' },
-    needleSizeMm: 4.0,
+    needleSizeMm: 0, // unset — no default needle (Joy works across many sizes)
     needleMaterial: 'metal',
     stitchPattern: 'stockinette',
     construction: 'in-the-round',

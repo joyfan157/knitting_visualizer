@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { Swatch, StitchPattern, Construction } from '../types'
 import { STITCH_PATTERNS, CONSTRUCTIONS, label } from '../types'
 import { predictGauge, type GaugeEstimate } from '../prediction'
+import { NumberInput } from './NumberInput'
 
 const BASIS_NOTE: Record<string, string> = {
   physics:
@@ -23,27 +24,24 @@ function EstimateRow({ label: name, est }: { label: string; est: GaugeEstimate }
 }
 
 export function Predictor({ swatches }: { swatches: Swatch[] }) {
-  const [needleSizeMm, setNeedle] = useState(4.0)
+  const [needleSizeMm, setNeedle] = useState<number | undefined>(undefined)
   const [stitchPattern, setPattern] = useState<StitchPattern>('stockinette')
   const [construction, setConstruction] = useState<Construction>('in-the-round')
   const [fiber, setFiber] = useState('')
 
-  const prediction = predictGauge(
-    { needleSizeMm, stitchPattern, construction, fiber },
-    swatches,
-  )
+  const prediction = needleSizeMm
+    ? predictGauge({ needleSizeMm, stitchPattern, construction, fiber }, swatches)
+    : null
 
   return (
     <div className="predictor">
       <div className="grid-2">
         <label>
           Needle size (mm)
-          <input
-            type="number"
-            step="0.25"
-            min="0"
+          <NumberInput
             value={needleSizeMm}
-            onChange={(e) => setNeedle(Number(e.target.value))}
+            onChange={setNeedle}
+            placeholder="e.g. 3.75"
           />
         </label>
         <label>
@@ -84,22 +82,28 @@ export function Predictor({ swatches }: { swatches: Swatch[] }) {
         </label>
       </div>
 
-      <div className={`prediction-card basis-${prediction.basis}`}>
-        <EstimateRow label="sts / 10cm" est={prediction.stitchesPer10cm} />
-        <EstimateRow label="rows / 10cm" est={prediction.rowsPer10cm} />
-        <p className="basis-note">
-          {BASIS_NOTE[prediction.basis]}
-          {prediction.matchCount > 0 && (
-            <>
-              {' '}
-              <span className="muted">
-                ({prediction.matchCount} similar swatch
-                {prediction.matchCount === 1 ? '' : 'es'})
-              </span>
-            </>
-          )}
+      {prediction ? (
+        <div className={`prediction-card basis-${prediction.basis}`}>
+          <EstimateRow label="sts / 10cm" est={prediction.stitchesPer10cm} />
+          <EstimateRow label="rows / 10cm" est={prediction.rowsPer10cm} />
+          <p className="basis-note">
+            {BASIS_NOTE[prediction.basis]}
+            {prediction.matchCount > 0 && (
+              <>
+                {' '}
+                <span className="muted">
+                  ({prediction.matchCount} similar swatch
+                  {prediction.matchCount === 1 ? '' : 'es'})
+                </span>
+              </>
+            )}
+          </p>
+        </div>
+      ) : (
+        <p className="muted prediction-hint">
+          Enter a needle size to see a predicted gauge.
         </p>
-      </div>
+      )}
     </div>
   )
 }
