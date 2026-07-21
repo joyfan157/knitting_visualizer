@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { Swatch } from '../types'
 import { label } from '../types'
+import { describeMeasurement } from '../gauge'
 
 function matchesQuery(s: Swatch, q: string): boolean {
   if (!q.trim()) return true
@@ -79,7 +80,12 @@ export function SwatchJournal({
                   <td>{s.yarn.fiber}</td>
                   <td>{s.needleSizeMm} mm</td>
                   <td>{label(s.stitchPattern)}</td>
-                  <td className="nowrap">
+                  <td
+                    className="nowrap"
+                    title={
+                      s.measurement ? describeMeasurement(s.measurement) : undefined
+                    }
+                  >
                     {s.stitchesPer10cm} sts × {s.rowsPer10cm} rows
                   </td>
                   <td>{label(s.construction)}</td>

@@ -79,8 +79,13 @@ Gauge applies to both crafts, so starting with the gauge DB doesn't foreclose it
   **metal** — Joy uses a full interchangeable metal kit).
 - **Technique:** stitch pattern (stockinette, garter, ribbing, seed, cable,
   other); construction flat vs **in the round** (Joy's default).
-- **Measured result:** stitches per 10cm, rows per 10cm, blocked (default true),
-  washed (default true — Joy wet-blocks).
+- **Measured result:** flexible entry, normalized to a canonical **stitches &
+  rows per 10cm**. Two methods: (a) _gauge-span_ — count sts/rows over a measured
+  window; (b) _full-swatch / made-to-measure_ — cast on N sts, knit M rows, then
+  measure the finished piece's width & height. Window/piece dimensions can be
+  given in **cm or inches** (1 in = 2.54 cm exactly, so 4 in = 10.16 cm ≠ 10 cm;
+  we convert precisely). Plus blocked (default true) and washed (default true —
+  Joy wet-blocks).
 - **Meta:** created date, project, notes.
 
 Smart defaults reflect Joy's habits (metal, in-the-round, wet-blocked) so entry

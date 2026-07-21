@@ -146,6 +146,13 @@ textarea:focus {
 .req {
   color: var(--accent);
 }
+.gauge-preview {
+  margin: 0.5rem 0 0.2rem;
+  padding: 0.45rem 0.65rem;
+  border-radius: 7px;
+  background: var(--accent-soft);
+  font-size: 0.95rem;
+}
 
 /* --- Buttons --- */
 .btn,

@@ -23,6 +23,32 @@ export type Construction = 'flat' | 'in-the-round'
 
 export type NeedleMaterial = 'metal' | 'wood' | 'bamboo' | 'other'
 
+export type LengthUnit = 'cm' | 'in'
+
+export type MeasurementMethod = 'gauge-span' | 'full-swatch'
+
+/** Count stitches & rows over a measured square window (e.g. "22 sts over 10cm"). */
+export interface GaugeSpanMeasurement {
+  method: 'gauge-span'
+  stitchCount: number
+  rowCount: number
+  /** Size of the measured window; same span used for width and height. */
+  span: number
+  unit: LengthUnit
+}
+
+/** Made-to-measure: cast on a known count, knit known rows, measure the piece. */
+export interface FullSwatchMeasurement {
+  method: 'full-swatch'
+  castOnStitches: number
+  totalRows: number
+  measuredWidth: number
+  measuredHeight: number
+  unit: LengthUnit
+}
+
+export type Measurement = GaugeSpanMeasurement | FullSwatchMeasurement
+
 export interface Yarn {
   brand?: string
   name?: string
@@ -45,7 +71,9 @@ export interface Swatch {
   needleMaterial: NeedleMaterial
   stitchPattern: StitchPattern
   construction: Construction
-  /** Measured gauge over a 10cm span. */
+  /** How the gauge was measured (window count or made-to-measure). */
+  measurement: Measurement
+  /** Canonical gauge over a 10cm span, derived from `measurement` at save time. */
   stitchesPer10cm: number
   rowsPer10cm: number
   blocked: boolean

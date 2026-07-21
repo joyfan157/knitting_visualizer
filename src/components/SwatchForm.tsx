@@ -6,6 +6,11 @@ import type {
   StitchPattern,
   Construction,
   NeedleMaterial,
+  Measurement,
+  MeasurementMethod,
+  LengthUnit,
+  GaugeSpanMeasurement,
+  FullSwatchMeasurement,
 } from '../types'
 import {
   WEIGHT_CATEGORIES,
@@ -15,11 +20,14 @@ import {
   label,
 } from '../types'
 import { newSwatchDraft } from '../defaults'
+import { derivePer10cm } from '../gauge'
 
 /** '' -> undefined, otherwise Number. Keeps optional numeric fields clean. */
 function numOrUndef(v: string): number | undefined {
   return v.trim() === '' ? undefined : Number(v)
 }
+
+const round1 = (n: number) => Math.round(n * 10) / 10
 
 export function SwatchForm({
   onSave,
@@ -32,18 +40,61 @@ export function SwatchForm({
     setDraft((d) => ({ ...d, yarn: { ...d.yarn, ...patch } }))
   }
 
+  const measurement = draft.measurement
+  const preview = derivePer10cm(measurement)
+
+  function updateSpan(patch: Partial<GaugeSpanMeasurement>) {
+    setDraft((d) => ({
+      ...d,
+      measurement: { ...(d.measurement as GaugeSpanMeasurement), ...patch },
+    }))
+  }
+
+  function updateFull(patch: Partial<FullSwatchMeasurement>) {
+    setDraft((d) => ({
+      ...d,
+      measurement: { ...(d.measurement as FullSwatchMeasurement), ...patch },
+    }))
+  }
+
+  function setMethod(method: MeasurementMethod) {
+    setDraft((d) => {
+      if (d.measurement.method === method) return d
+      const unit = d.measurement.unit
+      const next: Measurement =
+        method === 'gauge-span'
+          ? { method, stitchCount: 0, rowCount: 0, span: unit === 'in' ? 4 : 10, unit }
+          : {
+              method,
+              castOnStitches: 0,
+              totalRows: 0,
+              measuredWidth: 0,
+              measuredHeight: 0,
+              unit,
+            }
+      return { ...d, measurement: next }
+    })
+  }
+
+  function setUnit(unit: LengthUnit) {
+    setDraft((d) => ({ ...d, measurement: { ...d.measurement, unit } }))
+  }
+
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
     if (!draft.yarn.fiber.trim()) {
       alert('Fiber composition is required.')
       return
     }
-    if (!draft.stitchesPer10cm || !draft.rowsPer10cm) {
-      alert('Enter measured stitches and rows per 10cm.')
+    const { stitchesPer10cm, rowsPer10cm } = derivePer10cm(draft.measurement)
+    if (!stitchesPer10cm || !rowsPer10cm) {
+      alert('Enter your swatch measurements.')
       return
     }
     const swatch: Swatch = {
       ...draft,
+      stitchesPer10cm: round1(stitchesPer10cm),
+      rowsPer10cm: round1(rowsPer10cm),
       id: crypto.randomUUID(),
       createdAt: new Date().toISOString(),
     }
@@ -211,36 +262,132 @@ export function SwatchForm({
       </fieldset>
 
       <fieldset>
-        <legend>Measured gauge (per 10cm)</legend>
+        <legend>Measured gauge</legend>
         <div className="grid-2">
           <label>
-            Stitches <span className="req">*</span>
-            <input
-              type="number"
-              step="0.5"
-              min="0"
-              value={draft.stitchesPer10cm || ''}
-              onChange={(e) =>
-                setDraft((d) => ({
-                  ...d,
-                  stitchesPer10cm: Number(e.target.value),
-                }))
-              }
-            />
+            How measured
+            <select
+              value={measurement.method}
+              onChange={(e) => setMethod(e.target.value as MeasurementMethod)}
+            >
+              <option value="gauge-span">Count over a swatch window</option>
+              <option value="full-swatch">Made-to-measure whole swatch</option>
+            </select>
           </label>
           <label>
-            Rows <span className="req">*</span>
-            <input
-              type="number"
-              step="0.5"
-              min="0"
-              value={draft.rowsPer10cm || ''}
-              onChange={(e) =>
-                setDraft((d) => ({ ...d, rowsPer10cm: Number(e.target.value) }))
-              }
-            />
+            Units
+            <select
+              value={measurement.unit}
+              onChange={(e) => setUnit(e.target.value as LengthUnit)}
+            >
+              <option value="cm">centimeters</option>
+              <option value="in">inches</option>
+            </select>
           </label>
         </div>
+
+        {measurement.method === 'gauge-span' ? (
+          <div className="grid-3">
+            <label>
+              Stitches counted <span className="req">*</span>
+              <input
+                type="number"
+                step="0.5"
+                min="0"
+                value={measurement.stitchCount || ''}
+                onChange={(e) =>
+                  updateSpan({ stitchCount: Number(e.target.value) })
+                }
+              />
+            </label>
+            <label>
+              Rows counted <span className="req">*</span>
+              <input
+                type="number"
+                step="0.5"
+                min="0"
+                value={measurement.rowCount || ''}
+                onChange={(e) =>
+                  updateSpan({ rowCount: Number(e.target.value) })
+                }
+              />
+            </label>
+            <label>
+              Over ({measurement.unit}) <span className="req">*</span>
+              <input
+                type="number"
+                step="0.1"
+                min="0"
+                value={measurement.span || ''}
+                onChange={(e) => updateSpan({ span: Number(e.target.value) })}
+              />
+            </label>
+          </div>
+        ) : (
+          <>
+            <div className="grid-2">
+              <label>
+                Stitches cast on <span className="req">*</span>
+                <input
+                  type="number"
+                  step="1"
+                  min="0"
+                  value={measurement.castOnStitches || ''}
+                  onChange={(e) =>
+                    updateFull({ castOnStitches: Number(e.target.value) })
+                  }
+                />
+              </label>
+              <label>
+                Rows knit <span className="req">*</span>
+                <input
+                  type="number"
+                  step="1"
+                  min="0"
+                  value={measurement.totalRows || ''}
+                  onChange={(e) =>
+                    updateFull({ totalRows: Number(e.target.value) })
+                  }
+                />
+              </label>
+            </div>
+            <div className="grid-2">
+              <label>
+                Measured width ({measurement.unit}) <span className="req">*</span>
+                <input
+                  type="number"
+                  step="0.1"
+                  min="0"
+                  value={measurement.measuredWidth || ''}
+                  onChange={(e) =>
+                    updateFull({ measuredWidth: Number(e.target.value) })
+                  }
+                />
+              </label>
+              <label>
+                Measured height ({measurement.unit}){' '}
+                <span className="req">*</span>
+                <input
+                  type="number"
+                  step="0.1"
+                  min="0"
+                  value={measurement.measuredHeight || ''}
+                  onChange={(e) =>
+                    updateFull({ measuredHeight: Number(e.target.value) })
+                  }
+                />
+              </label>
+            </div>
+          </>
+        )}
+
+        <p className="gauge-preview">
+          → <strong>{round1(preview.stitchesPer10cm)}</strong> sts ×{' '}
+          <strong>{round1(preview.rowsPer10cm)}</strong> rows / 10&nbsp;cm
+          {measurement.unit === 'in' && (
+            <span className="muted"> &nbsp;(converted from inches)</span>
+          )}
+        </p>
         <div className="checkboxes">
           <label className="inline">
             <input
