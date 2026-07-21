@@ -23,8 +23,8 @@ export default function App() {
     refresh().finally(() => setLoading(false))
   }, [])
 
-  async function handleSave(swatch: Swatch) {
-    await saveSwatch(swatch)
+  async function handleSave(toSave: Swatch[]) {
+    for (const s of toSave) await saveSwatch(s)
     await refresh()
   }
 

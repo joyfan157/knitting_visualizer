@@ -210,6 +210,19 @@ textarea:focus {
   background: var(--accent-soft);
 }
 
+/* --- Gauge-swatch attempts --- */
+.attempt {
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--accent);
+  border-radius: 8px;
+  padding: 0.6rem 0.7rem 0.4rem;
+  margin-bottom: 0.7rem;
+}
+.blocked-inline {
+  align-self: end;
+  margin-bottom: 0.6rem;
+}
+
 /* --- Buttons --- */
 .btn,
 button {

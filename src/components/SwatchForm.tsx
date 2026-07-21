@@ -7,11 +7,8 @@ import type {
   StitchPattern,
   Construction,
   NeedleMaterial,
-  Measurement,
   MeasurementMethod,
   LengthUnit,
-  GaugeSpanMeasurement,
-  FullSwatchMeasurement,
 } from '../types'
 import {
   WEIGHT_CATEGORIES,
@@ -21,30 +18,21 @@ import {
   NEEDLE_MATERIALS,
   label,
 } from '../types'
-import { newSwatchDraft, newYarn } from '../defaults'
+import { newYarn } from '../defaults'
 import { derivePer10cm } from '../gauge'
+import {
+  newEntryDraft,
+  newAttempt,
+  swatchToEntry,
+  entryToSwatches,
+  attemptMeasurement,
+  type EntryDraft,
+  type Attempt,
+  type AttemptMeasure,
+} from '../entry'
 import { NumberInput } from './NumberInput'
 
 const round1 = (n: number) => Math.round(n * 10) / 10
-
-type Draft = Omit<Swatch, 'id' | 'createdAt'>
-
-/** Clone an existing swatch into an editable draft (drops id/createdAt). */
-function toDraft(s: Swatch): Draft {
-  return {
-    yarns: s.yarns.map((y) => ({ ...y })),
-    needleSizeMm: s.needleSizeMm,
-    needleMaterial: s.needleMaterial,
-    stitchPattern: s.stitchPattern,
-    construction: s.construction,
-    measurement: { ...s.measurement },
-    stitchesPer10cm: s.stitchesPer10cm,
-    rowsPer10cm: s.rowsPer10cm,
-    blocked: s.blocked,
-    project: s.project,
-    notes: s.notes,
-  }
-}
 
 /** Editor for a single yarn strand. */
 function StrandFields({
@@ -157,24 +145,156 @@ function StrandFields({
   )
 }
 
+/** Editor for one gauge-swatch attempt (needle + measurement numbers). */
+function AttemptCard({
+  draft,
+  attempt,
+  index,
+  canRemove,
+  onAttempt,
+  onMeasure,
+  onRemove,
+}: {
+  draft: EntryDraft
+  attempt: Attempt
+  index: number
+  canRemove: boolean
+  onAttempt: (patch: Partial<Attempt>) => void
+  onMeasure: (patch: Partial<AttemptMeasure>) => void
+  onRemove: () => void
+}) {
+  const unit = draft.measurementUnit
+  const preview = derivePer10cm(attemptMeasurement(draft, attempt))
+  const m = attempt.measure
+
+  return (
+    <div className="attempt">
+      <div className="strand-head">
+        <span className="strand-title">Gauge swatch {index + 1}</span>
+        {canRemove && (
+          <button
+            type="button"
+            className="btn danger small"
+            onClick={onRemove}
+            title="Remove this gauge swatch"
+          >
+            ✕
+          </button>
+        )}
+      </div>
+
+      <div className="grid-2">
+        <label>
+          Needle size (mm) <span className="req">*</span>
+          <NumberInput
+            value={attempt.needleSizeMm || undefined}
+            onChange={(v) => onAttempt({ needleSizeMm: v ?? 0 })}
+            placeholder="e.g. 3.75"
+          />
+        </label>
+        <label className="inline blocked-inline">
+          <input
+            type="checkbox"
+            checked={attempt.blocked}
+            onChange={(e) => onAttempt({ blocked: e.target.checked })}
+          />
+          Blocked
+        </label>
+      </div>
+
+      {draft.measurementMethod === 'gauge-span' ? (
+        <div className="grid-3">
+          <label>
+            Stitches <span className="req">*</span>
+            <NumberInput
+              value={m.stitchCount || undefined}
+              onChange={(v) => onMeasure({ stitchCount: v ?? 0 })}
+            />
+          </label>
+          <label>
+            Rows <span className="req">*</span>
+            <NumberInput
+              value={m.rowCount || undefined}
+              onChange={(v) => onMeasure({ rowCount: v ?? 0 })}
+            />
+          </label>
+          <label>
+            Over ({unit}) <span className="req">*</span>
+            <NumberInput
+              value={m.span || undefined}
+              onChange={(v) => onMeasure({ span: v ?? 0 })}
+            />
+          </label>
+        </div>
+      ) : (
+        <>
+          <div className="grid-2">
+            <label>
+              Stitches cast on <span className="req">*</span>
+              <NumberInput
+                value={m.castOnStitches || undefined}
+                onChange={(v) => onMeasure({ castOnStitches: v ?? 0 })}
+              />
+            </label>
+            <label>
+              Rows knit <span className="req">*</span>
+              <NumberInput
+                value={m.totalRows || undefined}
+                onChange={(v) => onMeasure({ totalRows: v ?? 0 })}
+              />
+            </label>
+          </div>
+          <div className="grid-2">
+            <label>
+              Width ({unit}) <span className="req">*</span>
+              <NumberInput
+                value={m.measuredWidth || undefined}
+                onChange={(v) => onMeasure({ measuredWidth: v ?? 0 })}
+              />
+            </label>
+            <label>
+              Height ({unit}) <span className="req">*</span>
+              <NumberInput
+                value={m.measuredHeight || undefined}
+                onChange={(v) => onMeasure({ measuredHeight: v ?? 0 })}
+              />
+            </label>
+          </div>
+        </>
+      )}
+
+      <p className="gauge-preview">
+        → <strong>{round1(preview.stitchesPer10cm)}</strong> sts ×{' '}
+        <strong>{round1(preview.rowsPer10cm)}</strong> rows / 10&nbsp;cm
+        {unit === 'in' && (
+          <span className="muted"> &nbsp;(converted from inches)</span>
+        )}
+      </p>
+    </div>
+  )
+}
+
 export function SwatchForm({
   onSave,
   editing,
   onCancelEdit,
 }: {
-  onSave: (s: Swatch) => void | Promise<void>
+  onSave: (swatches: Swatch[]) => void | Promise<void>
   editing?: Swatch | null
   onCancelEdit?: () => void
 }) {
-  const [draft, setDraft] = useState<Draft>(() =>
-    editing ? toDraft(editing) : newSwatchDraft(),
+  const [draft, setDraft] = useState<EntryDraft>(() =>
+    editing ? swatchToEntry(editing) : newEntryDraft(),
   )
 
-  // Load the selected entry when entering edit mode; clear back to blank on exit.
+  // Load the selected entry when entering edit mode; clear to blank on exit.
   useEffect(() => {
-    setDraft(editing ? toDraft(editing) : newSwatchDraft())
+    setDraft(editing ? swatchToEntry(editing) : newEntryDraft())
   }, [editing])
 
+  const isEditing = !!editing
+
+  // --- Yarn strands (shared across all attempts) ---
   function setStrand(index: number, patch: Partial<Yarn>) {
     setDraft((d) => ({
       ...d,
@@ -192,78 +312,82 @@ export function SwatchForm({
     )
   }
 
-  const measurement = draft.measurement
-  const preview = derivePer10cm(measurement)
-
-  function updateSpan(patch: Partial<GaugeSpanMeasurement>) {
-    setDraft((d) => ({
-      ...d,
-      measurement: { ...(d.measurement as GaugeSpanMeasurement), ...patch },
-    }))
-  }
-
-  function updateFull(patch: Partial<FullSwatchMeasurement>) {
-    setDraft((d) => ({
-      ...d,
-      measurement: { ...(d.measurement as FullSwatchMeasurement), ...patch },
-    }))
-  }
-
+  // --- Measurement setup (shared) ---
   function setMethod(method: MeasurementMethod) {
+    setDraft((d) => ({ ...d, measurementMethod: method }))
+  }
+  function setUnit(unit: LengthUnit) {
     setDraft((d) => {
-      if (d.measurement.method === method) return d
-      const unit = d.measurement.unit
-      const next: Measurement =
-        method === 'gauge-span'
-          ? { method, stitchCount: 0, rowCount: 0, span: unit === 'in' ? 4 : 10, unit }
-          : {
-              method,
-              castOnStitches: 0,
-              totalRows: 0,
-              measuredWidth: 0,
-              measuredHeight: 0,
-              unit,
-            }
-      return { ...d, measurement: next }
+      const oldDefault = d.measurementUnit === 'in' ? 4 : 10
+      const newDefault = unit === 'in' ? 4 : 10
+      // If a span is still the old unit's default, swap to the new one.
+      const attempts = d.attempts.map((a) =>
+        a.measure.span === oldDefault
+          ? { ...a, measure: { ...a.measure, span: newDefault } }
+          : a,
+      )
+      return { ...d, measurementUnit: unit, attempts }
     })
   }
 
-  function setUnit(unit: LengthUnit) {
-    setDraft((d) => ({ ...d, measurement: { ...d.measurement, unit } }))
+  // --- Attempts ---
+  function setAttempt(index: number, patch: Partial<Attempt>) {
+    setDraft((d) => ({
+      ...d,
+      attempts: d.attempts.map((a, i) => (i === index ? { ...a, ...patch } : a)),
+    }))
+  }
+  function setMeasure(index: number, patch: Partial<AttemptMeasure>) {
+    setDraft((d) => ({
+      ...d,
+      attempts: d.attempts.map((a, i) =>
+        i === index ? { ...a, measure: { ...a.measure, ...patch } } : a,
+      ),
+    }))
+  }
+  function addAttempt() {
+    setDraft((d) => {
+      const last = d.attempts[d.attempts.length - 1]
+      const a = newAttempt(d.measurementUnit)
+      a.measure.span = last.measure.span
+      a.blocked = last.blocked
+      return { ...d, attempts: [...d.attempts, a] }
+    })
+  }
+  function removeAttempt(index: number) {
+    setDraft((d) =>
+      d.attempts.length > 1
+        ? { ...d, attempts: d.attempts.filter((_, i) => i !== index) }
+        : d,
+    )
   }
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
-    if (!draft.needleSizeMm) {
-      alert('Enter a needle size.')
+    const now = new Date().toISOString()
+    const { swatches, error } = entryToSwatches(draft, editing ?? null, now)
+    if (error) {
+      alert(error)
       return
     }
-    const { stitchesPer10cm, rowsPer10cm } = derivePer10cm(draft.measurement)
-    if (!stitchesPer10cm || !rowsPer10cm) {
-      alert('Enter your swatch measurements.')
-      return
-    }
-    const swatch: Swatch = {
-      ...draft,
-      stitchesPer10cm: round1(stitchesPer10cm),
-      rowsPer10cm: round1(rowsPer10cm),
-      id: editing ? editing.id : crypto.randomUUID(),
-      createdAt: editing ? editing.createdAt : new Date().toISOString(),
-    }
-    await onSave(swatch)
-    if (editing) {
-      onCancelEdit?.() // exit edit mode; effect resets the form to blank
+    await onSave(swatches)
+    if (isEditing) {
+      onCancelEdit?.() // effect resets the form to blank
     } else {
-      setDraft(newSwatchDraft())
+      setDraft(newEntryDraft())
     }
   }
+
+  const saveLabel = isEditing
+    ? 'Update swatch'
+    : draft.attempts.length > 1
+      ? `Save ${draft.attempts.length} swatches`
+      : 'Save swatch'
 
   return (
     <form className="swatch-form" onSubmit={handleSubmit}>
       <fieldset>
-        <legend>
-          Yarn{draft.yarns.length > 1 ? ' (held together)' : ''}
-        </legend>
+        <legend>Yarn{draft.yarns.length > 1 ? ' (held together)' : ''}</legend>
         {draft.yarns.map((yarn, i) => (
           <StrandFields
             key={i}
@@ -280,18 +404,8 @@ export function SwatchForm({
       </fieldset>
 
       <fieldset>
-        <legend>Tools &amp; technique</legend>
-        <div className="grid-2">
-          <label>
-            Needle size (mm) <span className="req">*</span>
-            <NumberInput
-              value={draft.needleSizeMm || undefined}
-              onChange={(v) =>
-                setDraft((d) => ({ ...d, needleSizeMm: v ?? 0 }))
-              }
-              placeholder="e.g. 3.75"
-            />
-          </label>
+        <legend>Technique</legend>
+        <div className="grid-3">
           <label>
             Needle material
             <select
@@ -310,8 +424,6 @@ export function SwatchForm({
               ))}
             </select>
           </label>
-        </div>
-        <div className="grid-2">
           <label>
             Stitch pattern
             <select
@@ -357,7 +469,7 @@ export function SwatchForm({
           <label>
             How measured
             <select
-              value={measurement.method}
+              value={draft.measurementMethod}
               onChange={(e) => setMethod(e.target.value as MeasurementMethod)}
             >
               <option value="gauge-span">Count over a swatch window</option>
@@ -367,7 +479,7 @@ export function SwatchForm({
           <label>
             Units
             <select
-              value={measurement.unit}
+              value={draft.measurementUnit}
               onChange={(e) => setUnit(e.target.value as LengthUnit)}
             >
               <option value="cm">centimeters</option>
@@ -376,88 +488,24 @@ export function SwatchForm({
           </label>
         </div>
 
-        {measurement.method === 'gauge-span' ? (
-          <div className="grid-3">
-            <label>
-              Stitches counted <span className="req">*</span>
-              <NumberInput
-                value={measurement.stitchCount || undefined}
-                onChange={(v) => updateSpan({ stitchCount: v ?? 0 })}
-              />
-            </label>
-            <label>
-              Rows counted <span className="req">*</span>
-              <NumberInput
-                value={measurement.rowCount || undefined}
-                onChange={(v) => updateSpan({ rowCount: v ?? 0 })}
-              />
-            </label>
-            <label>
-              Over ({measurement.unit}) <span className="req">*</span>
-              <NumberInput
-                value={measurement.span || undefined}
-                onChange={(v) => updateSpan({ span: v ?? 0 })}
-              />
-            </label>
-          </div>
-        ) : (
-          <>
-            <div className="grid-2">
-              <label>
-                Stitches cast on <span className="req">*</span>
-                <NumberInput
-                  value={measurement.castOnStitches || undefined}
-                  onChange={(v) => updateFull({ castOnStitches: v ?? 0 })}
-                />
-              </label>
-              <label>
-                Rows knit <span className="req">*</span>
-                <NumberInput
-                  value={measurement.totalRows || undefined}
-                  onChange={(v) => updateFull({ totalRows: v ?? 0 })}
-                />
-              </label>
-            </div>
-            <div className="grid-2">
-              <label>
-                Measured width ({measurement.unit}) <span className="req">*</span>
-                <NumberInput
-                  value={measurement.measuredWidth || undefined}
-                  onChange={(v) => updateFull({ measuredWidth: v ?? 0 })}
-                />
-              </label>
-              <label>
-                Measured height ({measurement.unit}){' '}
-                <span className="req">*</span>
-                <NumberInput
-                  value={measurement.measuredHeight || undefined}
-                  onChange={(v) => updateFull({ measuredHeight: v ?? 0 })}
-                />
-              </label>
-            </div>
-          </>
+        {draft.attempts.map((attempt, i) => (
+          <AttemptCard
+            key={i}
+            draft={draft}
+            attempt={attempt}
+            index={i}
+            canRemove={!isEditing && draft.attempts.length > 1}
+            onAttempt={(patch) => setAttempt(i, patch)}
+            onMeasure={(patch) => setMeasure(i, patch)}
+            onRemove={() => removeAttempt(i)}
+          />
+        ))}
+
+        {!isEditing && (
+          <button type="button" className="btn small" onClick={addAttempt}>
+            + Add another gauge swatch (same yarn)
+          </button>
         )}
-
-        <p className="gauge-preview">
-          → <strong>{round1(preview.stitchesPer10cm)}</strong> sts ×{' '}
-          <strong>{round1(preview.rowsPer10cm)}</strong> rows / 10&nbsp;cm
-          {measurement.unit === 'in' && (
-            <span className="muted"> &nbsp;(converted from inches)</span>
-          )}
-        </p>
-
-        <div className="checkboxes">
-          <label className="inline">
-            <input
-              type="checkbox"
-              checked={draft.blocked}
-              onChange={(e) =>
-                setDraft((d) => ({ ...d, blocked: e.target.checked }))
-              }
-            />
-            Blocked
-          </label>
-        </div>
       </fieldset>
 
       <fieldset>
@@ -485,9 +533,9 @@ export function SwatchForm({
 
       <div className="form-actions">
         <button type="submit" className="btn primary">
-          {editing ? 'Update swatch' : 'Save swatch'}
+          {saveLabel}
         </button>
-        {editing && (
+        {isEditing && (
           <button type="button" className="btn" onClick={onCancelEdit}>
             Cancel
           </button>
