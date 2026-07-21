@@ -90,6 +90,15 @@ Gauge applies to both crafts, so starting with the gauge DB doesn't foreclose it
   field — Joy wet-blocks, so washing is implied by blocking.)
 - **Meta:** created date, project, notes.
 
+**Entry vs. storage vs. journal.** Each gauge swatch is stored as an independent
+`Swatch`. But the _form_ works in "entries": one shared project + yarn + technique
+with a list of gauge-swatch **attempts** (same yarn across needle sizes to meet
+gauge), each saved as its own swatch. The _journal_ then re-groups swatches by
+**project + yarn**, showing a project's attempts together under one heading with
+a single **Edit** button that loads the whole group back into the form (adding
+an attempt creates a swatch; removing one deletes it). Project leads both the
+form and the journal — it's the primary way Joy parses her swatches.
+
 Smart defaults reflect Joy's habits (metal needles, flat, blocked) so entry
 is fast, but every field stays editable for old swatches or experiments.
 **Biggest predictive levers (per Joy): fiber composition and needle size.**

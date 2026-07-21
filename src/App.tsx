@@ -13,7 +13,9 @@ import { Predictor } from './components/Predictor'
 export default function App() {
   const [swatches, setSwatches] = useState<Swatch[]>([])
   const [loading, setLoading] = useState(true)
-  const [editing, setEditing] = useState<Swatch | null>(null)
+  // The group of swatches currently loaded into the form for editing (one
+  // project + yarn). null = creating a new entry.
+  const [editing, setEditing] = useState<Swatch[] | null>(null)
 
   async function refresh() {
     setSwatches(await getAllSwatches())
@@ -24,18 +26,27 @@ export default function App() {
   }, [])
 
   async function handleSave(toSave: Swatch[]) {
+    // When editing a group, delete any of its original swatches that were
+    // removed (their attempt is gone from the saved set).
+    if (editing) {
+      const savedIds = new Set(toSave.map((s) => s.id))
+      for (const orig of editing) {
+        if (!savedIds.has(orig.id)) await deleteSwatch(orig.id)
+      }
+      setEditing(null)
+    }
     for (const s of toSave) await saveSwatch(s)
     await refresh()
   }
 
   async function handleDelete(id: string) {
-    if (editing?.id === id) setEditing(null)
+    if (editing?.some((s) => s.id === id)) setEditing(null)
     await deleteSwatch(id)
     await refresh()
   }
 
-  function handleEdit(swatch: Swatch) {
-    setEditing(swatch)
+  function handleEdit(group: Swatch[]) {
+    setEditing(group)
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
@@ -74,7 +85,7 @@ export default function App() {
 
       <div className="columns">
         <section className="panel">
-          <h2>{editing ? 'Edit swatch' : 'Log a swatch'}</h2>
+          <h2>{editing ? 'Edit project' : 'Log gauge swatches'}</h2>
           <SwatchForm
             onSave={handleSave}
             editing={editing}
@@ -118,7 +129,7 @@ export default function App() {
             swatches={swatches}
             onDelete={handleDelete}
             onEdit={handleEdit}
-            editingId={editing?.id ?? null}
+            editingIds={editing ? editing.map((s) => s.id) : null}
           />
         )}
       </section>

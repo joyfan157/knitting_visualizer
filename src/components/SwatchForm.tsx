@@ -23,7 +23,7 @@ import { derivePer10cm } from '../gauge'
 import {
   newEntryDraft,
   newAttempt,
-  swatchToEntry,
+  swatchesToEntry,
   entryToSwatches,
   attemptMeasurement,
   type EntryDraft,
@@ -280,19 +280,19 @@ export function SwatchForm({
   onCancelEdit,
 }: {
   onSave: (swatches: Swatch[]) => void | Promise<void>
-  editing?: Swatch | null
+  editing?: Swatch[] | null
   onCancelEdit?: () => void
 }) {
   const [draft, setDraft] = useState<EntryDraft>(() =>
-    editing ? swatchToEntry(editing) : newEntryDraft(),
+    editing && editing.length ? swatchesToEntry(editing) : newEntryDraft(),
   )
 
-  // Load the selected entry when entering edit mode; clear to blank on exit.
+  // Load the selected project when entering edit mode; clear to blank on exit.
   useEffect(() => {
-    setDraft(editing ? swatchToEntry(editing) : newEntryDraft())
+    setDraft(editing && editing.length ? swatchesToEntry(editing) : newEntryDraft())
   }, [editing])
 
-  const isEditing = !!editing
+  const isEditing = !!(editing && editing.length)
 
   // --- Yarn strands (shared across all attempts) ---
   function setStrand(index: number, patch: Partial<Yarn>) {
@@ -365,27 +365,37 @@ export function SwatchForm({
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
     const now = new Date().toISOString()
-    const { swatches, error } = entryToSwatches(draft, editing ?? null, now)
+    const { swatches, error } = entryToSwatches(draft, now)
     if (error) {
       alert(error)
       return
     }
     await onSave(swatches)
-    if (isEditing) {
-      onCancelEdit?.() // effect resets the form to blank
-    } else {
-      setDraft(newEntryDraft())
-    }
+    // On edit, the parent clears `editing`, which resets the form via the
+    // effect. On a new entry, reset here.
+    if (!isEditing) setDraft(newEntryDraft())
   }
 
+  const count = draft.attempts.length
   const saveLabel = isEditing
-    ? 'Update swatch'
-    : draft.attempts.length > 1
-      ? `Save ${draft.attempts.length} swatches`
+    ? 'Save changes'
+    : count > 1
+      ? `Save ${count} gauge swatches`
       : 'Save swatch'
 
   return (
     <form className="swatch-form" onSubmit={handleSubmit}>
+      <label className="project-field">
+        Project
+        <input
+          value={draft.project ?? ''}
+          onChange={(e) =>
+            setDraft((d) => ({ ...d, project: e.target.value }))
+          }
+          placeholder="e.g. blue cardigan"
+        />
+      </label>
+
       <fieldset>
         <legend>Yarn{draft.yarns.length > 1 ? ' (held together)' : ''}</legend>
         {draft.yarns.map((yarn, i) => (
@@ -494,32 +504,20 @@ export function SwatchForm({
             draft={draft}
             attempt={attempt}
             index={i}
-            canRemove={!isEditing && draft.attempts.length > 1}
+            canRemove={draft.attempts.length > 1}
             onAttempt={(patch) => setAttempt(i, patch)}
             onMeasure={(patch) => setMeasure(i, patch)}
             onRemove={() => removeAttempt(i)}
           />
         ))}
 
-        {!isEditing && (
-          <button type="button" className="btn small" onClick={addAttempt}>
-            + Add another gauge swatch (same yarn)
-          </button>
-        )}
+        <button type="button" className="btn small" onClick={addAttempt}>
+          + Add another gauge swatch (same yarn)
+        </button>
       </fieldset>
 
       <fieldset>
         <legend>Notes</legend>
-        <label>
-          Project
-          <input
-            value={draft.project ?? ''}
-            onChange={(e) =>
-              setDraft((d) => ({ ...d, project: e.target.value }))
-            }
-            placeholder="e.g. blue cardigan"
-          />
-        </label>
         <label>
           Notes
           <textarea
