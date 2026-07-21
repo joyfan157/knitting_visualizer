@@ -72,7 +72,8 @@ Gauge applies to both crafts, so starting with the gauge DB doesn't foreclose it
 
 - **Yarn:** brand, name, fiber composition (required, free text e.g.
   "100% merino", "80/20 wool/nylon"), weight category (lace→super-bulky),
-  grist as `ydsPerGram` and/or `wpi` (wraps per inch) — both optional, keep
+  grist as `metersPerGram` (standard yarn-label figure) and/or `wpi` (wraps per
+  inch) — both optional, keep
   whichever is known, both is best, plies.
 - **Tools:** needle size in **mm** (canonical); needle material (defaults to
   **metal** — Joy uses a full interchangeable metal kit).

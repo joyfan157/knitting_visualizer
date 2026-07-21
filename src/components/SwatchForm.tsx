@@ -102,13 +102,15 @@ export function SwatchForm({
             </select>
           </label>
           <label>
-            Yds / gram
+            m / gram
             <input
               type="number"
               step="0.1"
               min="0"
-              value={draft.yarn.ydsPerGram ?? ''}
-              onChange={(e) => setYarn({ ydsPerGram: numOrUndef(e.target.value) })}
+              value={draft.yarn.metersPerGram ?? ''}
+              onChange={(e) =>
+                setYarn({ metersPerGram: numOrUndef(e.target.value) })
+              }
             />
           </label>
           <label>

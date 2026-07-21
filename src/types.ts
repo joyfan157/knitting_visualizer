@@ -29,8 +29,8 @@ export interface Yarn {
   /** Free text, e.g. "100% merino", "80/20 wool/nylon". Required. */
   fiber: string
   weightCategory?: WeightCategory
-  /** Grist option 1: yards per gram. */
-  ydsPerGram?: number
+  /** Grist option 1: meters per gram (the standard yarn-label figure). */
+  metersPerGram?: number
   /** Grist option 2: wraps per inch. */
   wpi?: number
   plies?: number
