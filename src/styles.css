@@ -196,6 +196,20 @@ textarea:focus {
   flex: 1;
 }
 
+.form-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+.row-actions {
+  display: flex;
+  gap: 0.3rem;
+  white-space: nowrap;
+}
+.editing-row {
+  background: var(--accent-soft);
+}
+
 /* --- Buttons --- */
 .btn,
 button {

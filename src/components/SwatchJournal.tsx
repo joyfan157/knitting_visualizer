@@ -45,9 +45,13 @@ function fiberSummary(s: Swatch): string {
 export function SwatchJournal({
   swatches,
   onDelete,
+  onEdit,
+  editingId,
 }: {
   swatches: Swatch[]
   onDelete: (id: string) => void
+  onEdit: (s: Swatch) => void
+  editingId: string | null
 }) {
   const [q, setQ] = useState('')
 
@@ -90,7 +94,7 @@ export function SwatchJournal({
             </thead>
             <tbody>
               {filtered.map((s) => (
-                <tr key={s.id}>
+                <tr key={s.id} className={s.id === editingId ? 'editing-row' : ''}>
                   <td>{new Date(s.createdAt).toLocaleDateString()}</td>
                   <td>
                     {yarnName(s)}
@@ -118,12 +122,20 @@ export function SwatchJournal({
                     {s.project && s.notes ? ' — ' : ''}
                     {s.notes}
                   </td>
-                  <td>
+                  <td className="row-actions">
+                    <button
+                      className="btn small"
+                      onClick={() => onEdit(s)}
+                      title="Edit this swatch"
+                    >
+                      Edit
+                    </button>
                     <button
                       className="btn danger small"
                       onClick={() => {
                         if (confirm('Delete this swatch?')) onDelete(s.id)
                       }}
+                      title="Delete this swatch"
                     >
                       ✕
                     </button>

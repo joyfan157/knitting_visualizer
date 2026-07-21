@@ -13,6 +13,7 @@ import { Predictor } from './components/Predictor'
 export default function App() {
   const [swatches, setSwatches] = useState<Swatch[]>([])
   const [loading, setLoading] = useState(true)
+  const [editing, setEditing] = useState<Swatch | null>(null)
 
   async function refresh() {
     setSwatches(await getAllSwatches())
@@ -28,8 +29,14 @@ export default function App() {
   }
 
   async function handleDelete(id: string) {
+    if (editing?.id === id) setEditing(null)
     await deleteSwatch(id)
     await refresh()
+  }
+
+  function handleEdit(swatch: Swatch) {
+    setEditing(swatch)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   function handleExport() {
@@ -67,8 +74,12 @@ export default function App() {
 
       <div className="columns">
         <section className="panel">
-          <h2>Log a swatch</h2>
-          <SwatchForm onSave={handleSave} />
+          <h2>{editing ? 'Edit swatch' : 'Log a swatch'}</h2>
+          <SwatchForm
+            onSave={handleSave}
+            editing={editing}
+            onCancelEdit={() => setEditing(null)}
+          />
         </section>
 
         <section className="panel">
@@ -103,7 +114,12 @@ export default function App() {
         {loading ? (
           <p className="muted">Loading…</p>
         ) : (
-          <SwatchJournal swatches={swatches} onDelete={handleDelete} />
+          <SwatchJournal
+            swatches={swatches}
+            onDelete={handleDelete}
+            onEdit={handleEdit}
+            editingId={editing?.id ?? null}
+          />
         )}
       </section>
 

@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useState, useEffect, type FormEvent } from 'react'
 import type {
   Swatch,
   Yarn,
@@ -26,6 +26,25 @@ import { derivePer10cm } from '../gauge'
 import { NumberInput } from './NumberInput'
 
 const round1 = (n: number) => Math.round(n * 10) / 10
+
+type Draft = Omit<Swatch, 'id' | 'createdAt'>
+
+/** Clone an existing swatch into an editable draft (drops id/createdAt). */
+function toDraft(s: Swatch): Draft {
+  return {
+    yarns: s.yarns.map((y) => ({ ...y })),
+    needleSizeMm: s.needleSizeMm,
+    needleMaterial: s.needleMaterial,
+    stitchPattern: s.stitchPattern,
+    construction: s.construction,
+    measurement: { ...s.measurement },
+    stitchesPer10cm: s.stitchesPer10cm,
+    rowsPer10cm: s.rowsPer10cm,
+    blocked: s.blocked,
+    project: s.project,
+    notes: s.notes,
+  }
+}
 
 /** Editor for a single yarn strand. */
 function StrandFields({
@@ -140,10 +159,21 @@ function StrandFields({
 
 export function SwatchForm({
   onSave,
+  editing,
+  onCancelEdit,
 }: {
   onSave: (s: Swatch) => void | Promise<void>
+  editing?: Swatch | null
+  onCancelEdit?: () => void
 }) {
-  const [draft, setDraft] = useState(newSwatchDraft())
+  const [draft, setDraft] = useState<Draft>(() =>
+    editing ? toDraft(editing) : newSwatchDraft(),
+  )
+
+  // Load the selected entry when entering edit mode; clear back to blank on exit.
+  useEffect(() => {
+    setDraft(editing ? toDraft(editing) : newSwatchDraft())
+  }, [editing])
 
   function setStrand(index: number, patch: Partial<Yarn>) {
     setDraft((d) => ({
@@ -217,11 +247,15 @@ export function SwatchForm({
       ...draft,
       stitchesPer10cm: round1(stitchesPer10cm),
       rowsPer10cm: round1(rowsPer10cm),
-      id: crypto.randomUUID(),
-      createdAt: new Date().toISOString(),
+      id: editing ? editing.id : crypto.randomUUID(),
+      createdAt: editing ? editing.createdAt : new Date().toISOString(),
     }
     await onSave(swatch)
-    setDraft(newSwatchDraft())
+    if (editing) {
+      onCancelEdit?.() // exit edit mode; effect resets the form to blank
+    } else {
+      setDraft(newSwatchDraft())
+    }
   }
 
   return (
@@ -449,9 +483,16 @@ export function SwatchForm({
         </label>
       </fieldset>
 
-      <button type="submit" className="btn primary">
-        Save swatch
-      </button>
+      <div className="form-actions">
+        <button type="submit" className="btn primary">
+          {editing ? 'Update swatch' : 'Save swatch'}
+        </button>
+        {editing && (
+          <button type="button" className="btn" onClick={onCancelEdit}>
+            Cancel
+          </button>
+        )}
+      </div>
     </form>
   )
 }
