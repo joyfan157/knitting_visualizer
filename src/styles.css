@@ -1,0 +1,285 @@
+:root {
+  --bg: #faf7f2;
+  --panel: #ffffff;
+  --ink: #2b2622;
+  --muted: #8a7f74;
+  --line: #e7ded2;
+  --accent: #b0552f; /* warm rust — yarn-ish */
+  --accent-soft: #f3e6dd;
+  --ok: #4a7c59;
+  --danger: #b23b3b;
+  --shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 6px 20px rgba(0, 0, 0, 0.04);
+  color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1c1917;
+    --panel: #262220;
+    --ink: #ece5dc;
+    --muted: #a99e91;
+    --line: #3a332e;
+    --accent: #e0895f;
+    --accent-soft: #3a2c23;
+    --ok: #7fb08c;
+    --danger: #e07a7a;
+    --shadow: 0 1px 3px rgba(0, 0, 0, 0.3), 0 6px 20px rgba(0, 0, 0, 0.25);
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+.app {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 1.5rem 1.25rem 3rem;
+}
+
+.app-header h1 {
+  margin: 0;
+  font-size: 1.9rem;
+}
+.tagline {
+  margin: 0.25rem 0 1.25rem;
+  color: var(--muted);
+}
+
+.columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+}
+@media (max-width: 800px) {
+  .columns {
+    grid-template-columns: 1fr;
+  }
+}
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 1.1rem 1.2rem 1.3rem;
+  box-shadow: var(--shadow);
+  margin-bottom: 1.25rem;
+}
+.panel h2 {
+  margin: 0 0 0.9rem;
+  font-size: 1.15rem;
+}
+
+/* --- Forms --- */
+fieldset {
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  margin: 0 0 0.9rem;
+  padding: 0.6rem 0.9rem 0.9rem;
+}
+legend {
+  padding: 0 0.4rem;
+  color: var(--muted);
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+label {
+  display: block;
+  font-size: 0.9rem;
+  margin-bottom: 0.6rem;
+}
+label.inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-right: 1.2rem;
+}
+label.narrow {
+  max-width: 8rem;
+}
+
+input,
+select,
+textarea {
+  width: 100%;
+  margin-top: 0.2rem;
+  padding: 0.45rem 0.55rem;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--bg);
+  color: var(--ink);
+  font: inherit;
+}
+input[type="checkbox"] {
+  width: auto;
+  margin: 0;
+}
+input:focus,
+select:focus,
+textarea:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.7rem;
+}
+.grid-3 {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 0.7rem;
+}
+.checkboxes {
+  margin-top: 0.3rem;
+}
+.req {
+  color: var(--accent);
+}
+
+/* --- Buttons --- */
+.btn,
+button {
+  font: inherit;
+  cursor: pointer;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--ink);
+  padding: 0.45rem 0.85rem;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+button:hover {
+  border-color: var(--accent);
+}
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.btn.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  font-weight: 600;
+}
+.btn.danger.small {
+  padding: 0.15rem 0.45rem;
+  color: var(--danger);
+  border-color: transparent;
+  background: transparent;
+}
+.btn.danger.small:hover {
+  border-color: var(--danger);
+}
+.import-btn {
+  margin: 0;
+}
+
+/* --- Predictor --- */
+.prediction-card {
+  margin-top: 0.9rem;
+  padding: 0.9rem 1rem;
+  border-radius: 10px;
+  background: var(--accent-soft);
+  border: 1px solid var(--line);
+}
+.estimate {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  margin-bottom: 0.3rem;
+}
+.estimate-label {
+  width: 6.5rem;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+.estimate-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.estimate-range {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.basis-note {
+  margin: 0.5rem 0 0;
+  font-size: 0.85rem;
+  color: var(--ink);
+}
+
+/* --- Journal --- */
+.journal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.journal-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+.count {
+  color: var(--muted);
+  font-weight: 400;
+}
+.search {
+  margin: 0.5rem 0 0.9rem;
+}
+.table-scroll {
+  overflow-x: auto;
+}
+.journal-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+}
+.journal-table th,
+.journal-table td {
+  text-align: left;
+  padding: 0.5rem 0.6rem;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}
+.journal-table th {
+  color: var(--muted);
+  font-weight: 600;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+.nowrap {
+  white-space: nowrap;
+}
+.finish {
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+.notes-cell {
+  max-width: 16rem;
+}
+
+.muted {
+  color: var(--muted);
+}
+.app-footer {
+  margin-top: 1.5rem;
+  color: var(--muted);
+  font-size: 0.82rem;
+  text-align: center;
+}
