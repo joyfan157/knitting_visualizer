@@ -12,6 +12,7 @@ import { Auth } from './components/Auth'
 import { SwatchForm } from './components/SwatchForm'
 import { SwatchJournal } from './components/SwatchJournal'
 import { Predictor } from './components/Predictor'
+import { KnitStudio } from './components/KnitStudio'
 
 function errorMessage(e: unknown): string {
   if (e && typeof e === 'object' && 'message' in e) {
@@ -27,6 +28,7 @@ export default function App() {
   const [swatches, setSwatches] = useState<Swatch[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [tab, setTab] = useState<'journal' | 'studio'>('journal')
   // The group of swatches currently loaded into the form for editing (one
   // project + yarn). null = creating a new entry.
   const [editing, setEditing] = useState<Swatch[] | null>(null)
@@ -201,56 +203,77 @@ export default function App() {
         </div>
       )}
 
-      <div className="columns">
-        <section className="panel">
-          <h2>{editing ? 'Edit project' : 'Log gauge swatches'}</h2>
-          <SwatchForm
-            onSave={handleSave}
-            editing={editing}
-            onCancelEdit={() => setEditing(null)}
-          />
-        </section>
+      <nav className="tabs">
+        <button
+          className={tab === 'journal' ? 'active' : ''}
+          onClick={() => setTab('journal')}
+        >
+          Gauge journal
+        </button>
+        <button
+          className={tab === 'studio' ? 'active' : ''}
+          onClick={() => setTab('studio')}
+        >
+          Knit studio
+        </button>
+      </nav>
 
-        <section className="panel">
-          <h2>Predict gauge</h2>
-          <Predictor swatches={swatches} />
-        </section>
-      </div>
-
-      <section className="panel">
-        <div className="journal-header">
-          <h2>
-            Swatch journal{' '}
-            {swatches.length > 0 && (
-              <span className="count">({swatches.length})</span>
-            )}
-          </h2>
-          <div className="journal-actions">
-            <button onClick={handleExport} disabled={swatches.length === 0}>
-              Export JSON
-            </button>
-            <label className="btn import-btn">
-              Import JSON
-              <input
-                type="file"
-                accept="application/json"
-                onChange={handleImport}
-                hidden
+      {tab === 'studio' ? (
+        <KnitStudio swatches={swatches} />
+      ) : (
+        <>
+          <div className="columns">
+            <section className="panel">
+              <h2>{editing ? 'Edit project' : 'Log gauge swatches'}</h2>
+              <SwatchForm
+                onSave={handleSave}
+                editing={editing}
+                onCancelEdit={() => setEditing(null)}
               />
-            </label>
+            </section>
+
+            <section className="panel">
+              <h2>Predict gauge</h2>
+              <Predictor swatches={swatches} />
+            </section>
           </div>
-        </div>
-        {loading ? (
-          <p className="muted">Loading…</p>
-        ) : (
-          <SwatchJournal
-            swatches={swatches}
-            onDelete={handleDelete}
-            onEdit={handleEdit}
-            editingIds={editing ? editing.map((s) => s.id) : null}
-          />
-        )}
-      </section>
+
+          <section className="panel">
+            <div className="journal-header">
+              <h2>
+                Swatch journal{' '}
+                {swatches.length > 0 && (
+                  <span className="count">({swatches.length})</span>
+                )}
+              </h2>
+              <div className="journal-actions">
+                <button onClick={handleExport} disabled={swatches.length === 0}>
+                  Export JSON
+                </button>
+                <label className="btn import-btn">
+                  Import JSON
+                  <input
+                    type="file"
+                    accept="application/json"
+                    onChange={handleImport}
+                    hidden
+                  />
+                </label>
+              </div>
+            </div>
+            {loading ? (
+              <p className="muted">Loading…</p>
+            ) : (
+              <SwatchJournal
+                swatches={swatches}
+                onDelete={handleDelete}
+                onEdit={handleEdit}
+                editingIds={editing ? editing.map((s) => s.id) : null}
+              />
+            )}
+          </section>
+        </>
+      )}
 
       <footer className="app-footer">
         Synced to your account. Export JSON anytime for an extra backup.

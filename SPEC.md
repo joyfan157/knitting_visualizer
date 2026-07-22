@@ -57,14 +57,19 @@ Gauge applies to both crafts, so starting with the gauge DB doesn't foreclose it
 
 ## Roadmap
 
-1. **Gauge DB + prediction** ← _current milestone_
-   - Log swatches (also serves as a swatch journal).
-   - Predict gauge for a yarn/needle/pattern combo, with a range.
-2. **3D proof-of-concept** — stitch graph → physics relaxation → render a simple
-   knitted shape. First target: **knitted in-the-round toys**.
-3. **Pattern parsing / generation** — written pattern ↔ stitch graph; NL
+1. **Gauge DB + prediction** ✅ — log swatches (doubles as a journal); predict
+   gauge for a yarn/needle/pattern combo with a range. Cloud-synced.
+2. **Flat panel stitch graph** ← _current milestone_ — the fundamental unit is a
+   **flat panel**: a 2D sheet of stitches shaped row-by-row (cast-on, edge
+   inc/dec, bind-off), exactly how flat patterns are written. Render as a 2D SVG
+   stitch graph, sized by real gauge. _(Started here because most pieces are knit
+   flat then assembled; the emotional-support-chicken is knit entirely flat.)_
+3. **Assembly → 3D** — seams (edge-to-edge stitch correspondence) + **stuffing /
+   inflation** via mass-spring membrane physics turn flat panels into a 3D form.
+   Three.js enters here. This is where "knit flat, sew, stuff" becomes a 3D toy.
+4. **Pattern parsing / generation** — written pattern ↔ stitch graph; NL
    description → generated written pattern (likely LLM + geometry engine).
-4. **Stretch: interactive editor** — bidirectional 3D ↔ pattern editing.
+5. **Stretch: interactive editor** — bidirectional 3D ↔ pattern editing.
 
 ## Milestone 1: Gauge database
 
