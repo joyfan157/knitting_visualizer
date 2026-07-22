@@ -413,11 +413,21 @@ button:disabled {
   color: var(--accent);
   font-size: 0.9rem;
 }
+.auth-card .btn {
+  display: flex;
+  width: 100%;
+  justify-content: center;
+  margin-top: 0.4rem;
+}
 .link-btn {
   border: none;
   background: none;
   color: var(--accent);
   padding: 0.3rem 0;
+}
+.link-btn:hover {
+  border-color: transparent;
+  text-decoration: underline;
 }
 .error-banner {
   display: flex;
