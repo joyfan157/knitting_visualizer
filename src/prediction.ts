@@ -13,9 +13,11 @@ import type {
 // --- Physics baseline ---
 // Stitch width scales roughly with needle diameter. Knit stitches are wider than
 // tall, so row height < stitch width (=> more rows than stitches per 10cm).
-// Calibrated so worsted-on-4.5mm ≈ 20 sts / 27 rows per 10cm.
-const STITCH_WIDTH_FACTOR = 1.1 // mm of stitch width per mm of needle
-const ROW_HEIGHT_FACTOR = 0.82 // mm of row height per mm of needle
+// Calibrated 2026-07-22 against Joy's first 11 swatches (stockinette): median
+// implied factors were ~1.05 (width) and ~0.72 (height) — she knits noticeably
+// denser vertically than generic charts assume. Re-fit as more data accrues.
+const STITCH_WIDTH_FACTOR = 1.05 // mm of stitch width per mm of needle
+const ROW_HEIGHT_FACTOR = 0.72 // mm of row height per mm of needle
 
 // How vague the physics prior is, as a fraction of its own value (~15%).
 const PRIOR_VAGUENESS = 0.15
