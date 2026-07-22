@@ -21,7 +21,7 @@ export type StitchPattern =
 
 export type Construction = 'flat' | 'in-the-round'
 
-export type NeedleMaterial = 'metal' | 'wood' | 'bamboo' | 'other'
+export type NeedleMaterial = 'metal' | 'wood' | 'bamboo' | 'plastic' | 'other'
 
 export type LengthUnit = 'cm' | 'in'
 
@@ -116,7 +116,13 @@ export const STITCH_PATTERNS: StitchPattern[] = [
 
 export const CONSTRUCTIONS: Construction[] = ['flat', 'in-the-round']
 
-export const NEEDLE_MATERIALS: NeedleMaterial[] = ['metal', 'wood', 'bamboo', 'other']
+export const NEEDLE_MATERIALS: NeedleMaterial[] = [
+  'metal',
+  'wood',
+  'bamboo',
+  'plastic',
+  'other',
+]
 
 export const FIBER_CATEGORIES: FiberCategory[] = [
   'animal',
@@ -148,6 +154,7 @@ const LABELS: Record<string, string> = {
   metal: 'Metal',
   wood: 'Wood',
   bamboo: 'Bamboo',
+  plastic: 'Plastic / Acrylic',
   // weight categories
   lace: 'Lace',
   fingering: 'Fingering',
