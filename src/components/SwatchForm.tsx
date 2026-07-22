@@ -62,7 +62,7 @@ function StrandFields({
           </button>
         )}
       </div>
-      <div className="grid-2">
+      <div className="grid-3">
         <label>
           Brand
           <input
@@ -77,6 +77,13 @@ function StrandFields({
             value={yarn.name ?? ''}
             onChange={(e) => onChange({ name: e.target.value })}
             placeholder="e.g. Rios"
+          />
+        </label>
+        <label title="How many strands of this same yarn held together (2 = doubled)">
+          Strands
+          <NumberInput
+            value={yarn.strands}
+            onChange={(v) => onChange({ strands: v && v >= 1 ? Math.round(v) : 1 })}
           />
         </label>
       </div>
@@ -463,7 +470,12 @@ export function SwatchForm({
       </label>
 
       <fieldset>
-        <legend>Yarn{draft.yarns.length > 1 ? ' (held together)' : ''}</legend>
+        <legend>
+          Yarn
+          {draft.yarns.reduce((n, y) => n + (y.strands || 1), 0) > 1
+            ? ' (held together)'
+            : ''}
+        </legend>
         {draft.yarns.map((yarn, i) => (
           <StrandFields
             key={i}

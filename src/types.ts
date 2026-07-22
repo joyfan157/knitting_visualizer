@@ -61,6 +61,8 @@ export interface Yarn {
   name?: string
   /** Broad family; required (defaults to 'unknown'). */
   fiberCategory: FiberCategory
+  /** How many strands of THIS yarn are held together (1 = single, 2 = doubled). */
+  strands: number
   /** Optional specific composition, e.g. "100% merino", "80/20 wool/nylon". */
   fiber?: string
   weightCategory?: WeightCategory

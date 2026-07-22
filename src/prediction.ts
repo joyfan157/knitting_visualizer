@@ -1,5 +1,6 @@
 import type {
   Swatch,
+  Yarn,
   StitchPattern,
   Construction,
   FiberCategory,
@@ -54,6 +55,13 @@ function physicsBaseline(needleSizeMm: number) {
   }
 }
 
+/** Expand yarns into one category per physical strand (doubled yarn -> two). */
+function expandCategories(yarns: Yarn[]): FiberCategory[] {
+  return yarns.flatMap((y) =>
+    Array(Math.max(1, y.strands)).fill(y.fiberCategory),
+  )
+}
+
 /** Held-strand count strongly affects gauge, so weight it steeply. */
 function strandCountFactor(a: number, b: number): number {
   const d = Math.abs(a - b)
@@ -93,8 +101,11 @@ function similarity(s: Swatch, input: PredictionInput): number {
   const wPattern = s.stitchPattern === input.stitchPattern ? 1 : 0.2
   const wConstruction = s.construction === input.construction ? 1 : 0.7
 
-  const swatchCats = s.yarns.map((y) => y.fiberCategory)
-  const wStrands = strandCountFactor(input.fiberCategories.length, s.yarns.length)
+  const swatchCats = expandCategories(s.yarns)
+  const wStrands = strandCountFactor(
+    input.fiberCategories.length,
+    swatchCats.length,
+  )
   const wFiber = fiberFactor(input.fiberCategories, swatchCats)
 
   return wNeedle * wPattern * wConstruction * wStrands * wFiber

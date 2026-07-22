@@ -39,7 +39,8 @@ function yarnLabel(s: Swatch): string {
     .map((y) => {
       const name = strandName(y)
       const fiber = strandFiber(y)
-      return name === fiber ? name : `${name} (${fiber})`
+      const base = name === fiber ? name : `${name} (${fiber})`
+      return y.strands > 1 ? `${y.strands}× ${base}` : base
     })
     .join(' + ')
 }
@@ -51,7 +52,7 @@ function yarnSignature(s: Swatch): string {
       (y) =>
         `${y.brand ?? ''}~${y.name ?? ''}~${y.fiberCategory}~${y.fiber ?? ''}~${
           y.weightCategory ?? ''
-        }`,
+        }~${y.strands}`,
     )
     .join('+')
 }

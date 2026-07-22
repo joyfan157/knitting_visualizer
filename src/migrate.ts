@@ -21,10 +21,12 @@ function normalizeYarn(raw: unknown): Yarn {
     FIBER_CATEGORY_VALUES.includes(category as FiberCategory)
       ? (category as FiberCategory)
       : 'unknown'
+  const strands = y.strands
   return {
     brand: y.brand as string | undefined,
     name: y.name as string | undefined,
     fiberCategory,
+    strands: typeof strands === 'number' && strands >= 1 ? Math.round(strands) : 1,
     fiber: (y.fiber as string) || undefined,
     weightCategory: y.weightCategory as Yarn['weightCategory'],
     metersPerGram: y.metersPerGram as number | undefined,
