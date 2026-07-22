@@ -388,6 +388,58 @@ button:disabled {
 .muted {
   color: var(--muted);
 }
+
+/* --- Header / account / auth --- */
+.header-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.account {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+.auth {
+  max-width: 26rem;
+  margin: 1rem auto;
+}
+.auth-card h2 {
+  margin-top: 0;
+}
+.auth-message {
+  color: var(--accent);
+  font-size: 0.9rem;
+}
+.link-btn {
+  border: none;
+  background: none;
+  color: var(--accent);
+  padding: 0.3rem 0;
+}
+.error-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  background: color-mix(in srgb, var(--danger) 12%, transparent);
+  border: 1px solid var(--danger);
+  color: var(--danger);
+  border-radius: 8px;
+  padding: 0.6rem 0.9rem;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+}
+.code-block {
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  padding: 0.7rem 0.9rem;
+  overflow-x: auto;
+  font-size: 0.85rem;
+}
 .app-footer {
   margin-top: 1.5rem;
   color: var(--muted);

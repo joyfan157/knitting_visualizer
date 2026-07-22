@@ -1,53 +1,47 @@
-import { openDB, type DBSchema, type IDBPDatabase } from 'idb'
+import { supabase } from './supabaseClient'
 import type { Swatch } from './types'
 import { normalizeSwatch } from './migrate'
 
-// Local-first storage: swatches live in the browser's IndexedDB.
-// JSON export/import (in App.tsx) provides backup + portability.
+// Storage lives in Supabase (hosted Postgres). One row per gauge swatch; the
+// full Swatch object is kept in a `data` jsonb column so the app's shape can
+// evolve without migrations. Row-Level Security scopes rows to the signed-in
+// user, so these queries only ever see/affect the current user's swatches.
 
-interface KnittingDB extends DBSchema {
-  swatches: {
-    key: string
-    value: Swatch
-    indexes: { 'by-createdAt': string }
-  }
+const TABLE = 'swatches'
+
+interface Row {
+  id: string
+  created_at: string | null
+  data: unknown
 }
 
-let dbPromise: Promise<IDBPDatabase<KnittingDB>> | null = null
-
-function getDB() {
-  if (!dbPromise) {
-    dbPromise = openDB<KnittingDB>('knitting-visualizer', 1, {
-      upgrade(db) {
-        const store = db.createObjectStore('swatches', { keyPath: 'id' })
-        store.createIndex('by-createdAt', 'createdAt')
-      },
-    })
-  }
-  return dbPromise
+function toRow(s: Swatch): { id: string; created_at: string; data: Swatch } {
+  return { id: s.id, created_at: s.createdAt, data: s }
 }
 
 /** All swatches, newest first (normalized to the current shape on read). */
 export async function getAllSwatches(): Promise<Swatch[]> {
-  const db = await getDB()
-  const all = await db.getAllFromIndex('swatches', 'by-createdAt')
-  return all.reverse().map(normalizeSwatch)
+  const { data, error } = await supabase
+    .from(TABLE)
+    .select('id, created_at, data')
+    .order('created_at', { ascending: false })
+  if (error) throw error
+  return ((data as Row[] | null) ?? []).map((r) => normalizeSwatch(r.data))
 }
 
 export async function saveSwatch(swatch: Swatch): Promise<void> {
-  const db = await getDB()
-  await db.put('swatches', swatch)
+  const { error } = await supabase.from(TABLE).upsert(toRow(swatch))
+  if (error) throw error
 }
 
 export async function deleteSwatch(id: string): Promise<void> {
-  const db = await getDB()
-  await db.delete('swatches', id)
+  const { error } = await supabase.from(TABLE).delete().eq('id', id)
+  if (error) throw error
 }
 
 /** Bulk upsert, used by JSON import. Normalizes older shapes on the way in. */
 export async function importSwatches(swatches: unknown[]): Promise<void> {
-  const db = await getDB()
-  const tx = db.transaction('swatches', 'readwrite')
-  await Promise.all(swatches.map((s) => tx.store.put(normalizeSwatch(s))))
-  await tx.done
+  const rows = swatches.map((s) => toRow(normalizeSwatch(s)))
+  const { error } = await supabase.from(TABLE).upsert(rows)
+  if (error) throw error
 }

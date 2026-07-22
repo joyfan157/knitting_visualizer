@@ -127,9 +127,14 @@ later if data justifies it.
 
 ## Tech stack
 
-- **Web app, local-first.** TypeScript + React + Vite. Data in the browser
-  (IndexedDB) with JSON export/import for backup — no server, works offline,
-  data stays on Joy's machine.
+- **Web app.** TypeScript + React + Vite.
+- **Storage: Supabase** (hosted Postgres) so the journal syncs across any
+  browser/device. Email-password auth; Row-Level Security scopes rows to the
+  signed-in user. One row per swatch, full `Swatch` object in a `jsonb` column
+  (no schema migrations as the model evolves). JSON export/import as a backup and
+  for moving data in. Config via `.env.local` (see `SUPABASE_SETUP.md`).
+  _(Was local-first IndexedDB; switched because IndexedDB is per-browser and Joy
+  uses more than one browser.)_
 - **3D (later):** Three.js.
 - **Prediction:** TypeScript for now; a Python service is the escape hatch if the
   ML gets heavy.
