@@ -116,8 +116,11 @@ predicted gauge (sts/10cm, rows/10cm) with a ± range. Three blended ingredients
    > sts/10cm.
 2. **Learned from Joy's swatches** — similar swatches pull the prediction toward
    her real tension. Similarity weighs needle size, **strand count** (held-
-   together strands change gauge a lot), fiber category, stitch pattern, and
-   construction. 'unknown' fiber is treated as "no constraint".
+   together strands change gauge a lot), fiber category, **yarn weight**,
+   **blocked state**, stitch pattern, and construction. 'unknown' fiber and an
+   unset weight are treated as "no constraint". _(Tested folding yarn grist
+   directly into the physics baseline — it overfit on 11 swatches, worse
+   leave-one-out error — so weight/grist are used for **matching** instead.)_
 3. **Uncertainty** — reported as a range that is wide with little data and
    narrows as the journal grows. No false precision.
 

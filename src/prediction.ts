@@ -4,7 +4,19 @@ import type {
   StitchPattern,
   Construction,
   FiberCategory,
+  WeightCategory,
 } from './types'
+
+const WEIGHT_RANK: Record<WeightCategory, number> = {
+  lace: 1,
+  fingering: 2,
+  sport: 3,
+  dk: 4,
+  worsted: 5,
+  aran: 6,
+  bulky: 7,
+  'super-bulky': 8,
+}
 
 // Gauge prediction = a function from (needle, pattern, fiber, …) to a predicted
 // gauge with an uncertainty range. It blends a physics baseline with the
@@ -33,6 +45,10 @@ export interface PredictionInput {
   construction: Construction
   /** Fiber category of each strand held together. Length = strand count. */
   fiberCategories: FiberCategory[]
+  /** Whether the planned swatch will be blocked (affects gauge). */
+  blocked: boolean
+  /** Optional yarn weight, used to prefer similar-thickness swatches. */
+  weightCategory?: WeightCategory
 }
 
 export interface GaugeEstimate {
@@ -62,6 +78,23 @@ function expandCategories(yarns: Yarn[]): FiberCategory[] {
   return yarns.flatMap((y) =>
     Array(Math.max(1, y.strands)).fill(y.fiberCategory),
   )
+}
+
+/** Heaviest yarn-weight rank present in a swatch, if any is set. */
+function swatchWeightRank(s: Swatch): number | undefined {
+  const ranks = s.yarns
+    .map((y) => (y.weightCategory ? WEIGHT_RANK[y.weightCategory] : undefined))
+    .filter((r): r is number => r !== undefined)
+  return ranks.length ? Math.max(...ranks) : undefined
+}
+
+/** Similar yarn weight => more comparable gauge. Neutral if either is unknown. */
+function weightFactor(input: PredictionInput, s: Swatch): number {
+  if (!input.weightCategory) return 0.85
+  const r = swatchWeightRank(s)
+  if (r === undefined) return 0.85
+  const d = Math.abs(WEIGHT_RANK[input.weightCategory] - r)
+  return d === 0 ? 1 : d === 1 ? 0.75 : d === 2 ? 0.5 : 0.35
 }
 
 /** Held-strand count strongly affects gauge, so weight it steeply. */
@@ -109,8 +142,12 @@ function similarity(s: Swatch, input: PredictionInput): number {
     swatchCats.length,
   )
   const wFiber = fiberFactor(input.fiberCategories, swatchCats)
+  const wBlocked = s.blocked === input.blocked ? 1 : 0.6
+  const wWeight = weightFactor(input, s)
 
-  return wNeedle * wPattern * wConstruction * wStrands * wFiber
+  return (
+    wNeedle * wPattern * wConstruction * wStrands * wFiber * wBlocked * wWeight
+  )
 }
 
 export function predictGauge(

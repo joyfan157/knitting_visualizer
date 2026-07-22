@@ -4,11 +4,13 @@ import type {
   StitchPattern,
   Construction,
   FiberCategory,
+  WeightCategory,
 } from '../types'
 import {
   STITCH_PATTERNS,
   CONSTRUCTIONS,
   FIBER_CATEGORIES,
+  WEIGHT_CATEGORIES,
   label,
 } from '../types'
 import { predictGauge, type GaugeEstimate } from '../prediction'
@@ -39,6 +41,8 @@ export function Predictor({ swatches }: { swatches: Swatch[] }) {
   const [fiberCategories, setFiberCategories] = useState<FiberCategory[]>([
     'unknown',
   ])
+  const [blocked, setBlocked] = useState(true)
+  const [weightCategory, setWeightCategory] = useState<WeightCategory | ''>('')
 
   function setStrandCat(index: number, value: FiberCategory) {
     setFiberCategories((cats) => cats.map((c, i) => (i === index ? value : c)))
@@ -54,7 +58,14 @@ export function Predictor({ swatches }: { swatches: Swatch[] }) {
 
   const prediction = needleSizeMm
     ? predictGauge(
-        { needleSizeMm, stitchPattern, construction, fiberCategories },
+        {
+          needleSizeMm,
+          stitchPattern,
+          construction,
+          fiberCategories,
+          blocked,
+          weightCategory: weightCategory || undefined,
+        },
         swatches,
       )
     : null
@@ -98,8 +109,31 @@ export function Predictor({ swatches }: { swatches: Swatch[] }) {
             ))}
           </select>
         </label>
-        <div />
+        <label>
+          Yarn weight (optional)
+          <select
+            value={weightCategory}
+            onChange={(e) =>
+              setWeightCategory(e.target.value as WeightCategory | '')
+            }
+          >
+            <option value="">— any —</option>
+            {WEIGHT_CATEGORIES.map((w) => (
+              <option key={w} value={w}>
+                {label(w)}
+              </option>
+            ))}
+          </select>
+        </label>
       </div>
+      <label className="inline">
+        <input
+          type="checkbox"
+          checked={blocked}
+          onChange={(e) => setBlocked(e.target.checked)}
+        />
+        Blocked
+      </label>
 
       <div className="predictor-strands">
         <span className="field-label">
